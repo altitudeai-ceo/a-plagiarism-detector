@@ -32,4 +32,21 @@ async function checkText() {
 }
 
 async function sendForDetection(text) {
-  const resultDiv = document.getElementById('result'
+  const resultDiv = document.getElementById('result');
+
+  try {
+    const mockResponse = {
+      plagiarism_score: Math.floor(Math.random() * 100),
+      ai_likelihood: Math.floor(Math.random() * 100),
+    };
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    resultDiv.innerHTML = `
+      <p><span>Plagiarism Score:</span> ${mockResponse.plagiarism_score}%</p>
+      <p><span>AI Detection Likelihood:</span> ${mockResponse.ai_likelihood}%</p>
+    `;
+  } catch (error) {
+    resultDiv.innerHTML = '<p>An error occurred. Please try again later.</p>';
+  }
+}
