@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="script.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plagiarism & AI Detector</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -98,6 +98,7 @@
       text-decoration: none;
     }
   </style>
+  <script src="script.js" defer></script>
 </head>
 <body>
   <header>
@@ -115,63 +116,5 @@
   <footer>
     <p>&copy; 2024 Plagiarism & AI Detector. All rights reserved. <a href="#">Privacy Policy</a></p>
   </footer>
-
-  <script>
-    async function checkText() {
-      const inputTextArea = document.getElementById('inputText');
-      const fileInput = document.getElementById('fileInput');
-      const resultDiv = document.getElementById('result');
-      let inputText = inputTextArea.value;
-
-      // Ensure result div is visible
-      resultDiv.style.display = 'block';
-
-      if (!inputText.trim() && !fileInput.files.length) {
-        resultDiv.innerHTML = '<p>Please enter text or upload a file to check.</p>';
-        return;
-      }
-
-      if (fileInput.files.length) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = async function (e) {
-          inputText = e.target.result;
-          await sendForDetection(inputText);
-        };
-
-        reader.onerror = function () {
-          resultDiv.innerHTML = '<p>Error reading the file. Please try again.</p>';
-        };
-
-        reader.readAsText(file);
-      } else {
-        await sendForDetection(inputText);
-      }
-    }
-
-    async function sendForDetection(text) {
-      const resultDiv = document.getElementById('result');
-
-      try {
-        // Mock API response (replace this with your real API)
-        const mockResponse = {
-          plagiarism_score: Math.floor(Math.random() * 100),
-          ai_likelihood: Math.floor(Math.random() * 100),
-        };
-
-        // Simulating a short delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Display results
-        resultDiv.innerHTML = `
-          <p><span>Plagiarism Score:</span> ${mockResponse.plagiarism_score}%</p>
-          <p><span>AI Detection Likelihood:</span> ${mockResponse.ai_likelihood}%</p>
-        `;
-      } catch (error) {
-        resultDiv.innerHTML = '<p>An error occurred. Please try again later.</p>';
-      }
-    }
-  </script>
 </body>
 </html>
