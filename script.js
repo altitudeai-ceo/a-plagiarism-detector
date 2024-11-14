@@ -1,4 +1,5 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
+
 async function checkText() {
   const inputTextArea = document.getElementById('inputText');
   const fileInput = document.getElementById('fileInput');
@@ -12,10 +13,23 @@ async function checkText() {
     return;
   }
 
-  // Simplified to avoid FileReader for debugging
-  inputText = "Mock input text for debugging";
+  if (fileInput.files.length) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
 
-  await sendForDetection(inputText);
+    reader.onload = async function (e) {
+      inputText = e.target.result;
+      await sendForDetection(inputText);
+    };
+
+    reader.onerror = function () {
+      resultDiv.innerHTML = '<p>Error reading the file. Please try again.</p>';
+    };
+
+    reader.readAsText(file);
+  } else {
+    await sendForDetection(inputText);
+  }
 }
 
 async function sendForDetection(text) {
