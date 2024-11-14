@@ -1,3 +1,4 @@
+document.getElementById("analyzeButton").addEventListener("click", checkText);
 async function checkText() {
   const inputTextArea = document.getElementById('inputText');
   const fileInput = document.getElementById('fileInput');
