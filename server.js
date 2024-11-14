@@ -9,7 +9,7 @@ const port = 3000;
 app.use(bodyParser.json());
 
 // Plagiarism detection endpoint
-app.post("/check-plagiarism", async (req, res) => {
+app.post("/check-plagiarism", async (req, res) => { 
   const { text, documents } = req.body;
 
   if (!text || !documents) {
