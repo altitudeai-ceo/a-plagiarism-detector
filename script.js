@@ -4,7 +4,6 @@ async function checkText() {
   const resultDiv = document.getElementById('result');
   let inputText = inputTextArea.value;
 
-  // Ensure result div is visible
   resultDiv.style.display = 'block';
 
   if (!inputText.trim() && !fileInput.files.length) {
@@ -12,23 +11,10 @@ async function checkText() {
     return;
   }
 
-  if (fileInput.files.length) {
-    const file = fileInput.files[0];
-    const reader = new FileReader();
+  // Simplified to avoid FileReader for debugging
+  inputText = "Mock input text for debugging";
 
-    reader.onload = async function (e) {
-      inputText = e.target.result;
-      await sendForDetection(inputText);
-    };
-
-    reader.onerror = function () {
-      resultDiv.innerHTML = '<p>Error reading the file. Please try again.</p>';
-    };
-
-    reader.readAsText(file);
-  } else {
-    await sendForDetection(inputText);
-  }
+  await sendForDetection(inputText);
 }
 
 async function sendForDetection(text) {
