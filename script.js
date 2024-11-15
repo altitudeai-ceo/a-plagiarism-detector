@@ -22,17 +22,16 @@ async function extractTextFromPDF(file) {
     fullText += pageText + " ";
   }
 
-  console.log("Extracted Text from PDF:", fullText);
   return fullText;
 }
 
 function normalizeText(text) {
   return text
-    .normalize("NFKD") // Normalize Unicode (e.g., accented characters)
-    .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII characters
-    .replace(/[.,!?;:()]/g, "") // Remove punctuation
-    .toLowerCase() // Convert to lowercase
-    .trim(); // Remove extra spaces
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/[.,!?;:()]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function tokenizeText(text) {
@@ -105,9 +104,18 @@ function performPlagiarismCheck(inputText) {
   const resultDiv = document.getElementById("result");
 
   const referenceDocuments = [
-    "This is a reference document that discusses certain topics in detail.",
-    "Here is another example of a document to compare against plagiarism cases.",
-    "Adding more detailed content ensures better matching and testing results.",
+    {
+      text: "This is a reference document that discusses certain topics in detail.",
+      url: "https://example.com/document1",
+    },
+    {
+      text: "Here is another example of a document to compare against plagiarism cases.",
+      url: "https://example.com/document2",
+    },
+    {
+      text: "Adding more detailed content ensures better matching and testing results.",
+      url: "https://example.com/document3",
+    },
   ];
 
   const normalizedInput = normalizeText(inputText);
@@ -115,7 +123,7 @@ function performPlagiarismCheck(inputText) {
   let highestSimilarity = 0;
   let matchedWords = [];
   const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc));
+    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc.text));
 
     if (similarity > highestSimilarity) highestSimilarity = similarity;
     matchedWords = [...matchedWords, ...words];
@@ -123,6 +131,7 @@ function performPlagiarismCheck(inputText) {
     return {
       document: `Reference Document ${index + 1}`,
       similarity,
+      url: doc.url,
     };
   });
 
@@ -141,7 +150,7 @@ function performPlagiarismCheck(inputText) {
           .filter((r) => r.similarity > 0)
           .map(
             (match) =>
-              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}%</li>`
+              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}% - <a href="${match.url}" target="_blank">View Document</a></li>`
           )
           .join("")}
       </ul>
