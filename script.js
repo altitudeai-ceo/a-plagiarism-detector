@@ -4,21 +4,23 @@ function calculatePhraseSimilarity(inputText, referenceText) {
   const inputPhrases = generatePhrases(inputText);
   const referencePhrases = generatePhrases(referenceText);
 
-  const intersection = inputPhrases.filter((phrase) =>
+  const matchedPhrases = inputPhrases.filter((phrase) =>
     referencePhrases.includes(phrase)
   );
 
   const similarityPercentage =
-    (intersection.length / referencePhrases.length) * 100;
+    (matchedPhrases.length / referencePhrases.length) * 100;
 
   return {
     similarity: similarityPercentage.toFixed(2),
-    matchedPhrases: intersection,
+    matchedPhrases: matchedPhrases,
   };
 }
 
 function generatePhrases(text, n = 3) {
-  const words = text.split(/\s+/);
+  // Normalize text: remove punctuation and convert to lowercase
+  const cleanText = text.replace(/[.,!?;:]/g, "").toLowerCase();
+  const words = cleanText.split(/\s+/);
   const phrases = [];
   for (let i = 0; i <= words.length - n; i++) {
     phrases.push(words.slice(i, i + n).join(" "));
@@ -96,9 +98,9 @@ function performPlagiarismCheck(inputText) {
   const resultDiv = document.getElementById("result");
 
   const referenceDocuments = [
-    "This is a reference document.",
-    "Another example of a document to compare against.",
-    "You can add more documents here for comparison.",
+    "This is a reference document that discusses certain topics.",
+    "Here is another example of a document to compare against.",
+    "You can add even more reference documents here for testing.",
   ];
 
   let highestSimilarity = 0;
