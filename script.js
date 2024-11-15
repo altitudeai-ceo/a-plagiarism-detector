@@ -1,8 +1,9 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 function normalizeText(text) {
-  // Remove punctuation, convert to lowercase, trim whitespace, and remove non-printable characters
+  // Remove non-printable characters, normalize Unicode, and strip punctuation
   return text
+    .normalize("NFKD") // Normalize Unicode (e.g., accented characters)
     .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII characters
     .replace(/[.,!?;:()]/g, "") // Remove punctuation
     .toLowerCase() // Convert to lowercase
@@ -75,7 +76,7 @@ function checkText() {
     const file = fileInput.files[0];
     const reader = new FileReader();
     reader.onload = (e) => performPlagiarismCheck(e.target.result);
-    reader.readAsText(file);
+    reader.readAsText(file, "UTF-8"); // Force UTF-8 encoding
   } else {
     performPlagiarismCheck(inputText);
   }
@@ -90,16 +91,25 @@ function performPlagiarismCheck(inputText) {
     "Adding more detailed content ensures better matching and testing results.",
   ];
 
-  console.log("Input Text (Raw):", inputText);
-  console.log("Reference Documents:", referenceDocuments);
+  // Log raw input text and its length
+  console.log("Raw Input Text:", inputText);
+  console.log("Input Text Length:", inputText.length);
+
+  // Normalize and log the cleaned input text
+  const normalizedInput = normalizeText(inputText);
+  console.log("Normalized Input Text:", normalizedInput);
 
   let highestSimilarity = 0;
   let matchedWords = [];
   const results = referenceDocuments.map((doc, index) => {
+    const normalizedDoc = normalizeText(doc);
+    console.log(`Normalized Reference Document ${index + 1}:`, normalizedDoc);
+
     const { similarity, matchedWords: words } = calculateSimilarity(
-      inputText,
-      doc
+      normalizedInput,
+      normalizedDoc
     );
+
     if (similarity > highestSimilarity) highestSimilarity = similarity;
     matchedWords = [...matchedWords, ...words];
 
@@ -112,7 +122,9 @@ function performPlagiarismCheck(inputText) {
 
   matchedWords = [...new Set(matchedWords)]; // Remove duplicates
 
-  console.log("Final Matched Words:", matchedWords);
+  // Log matched words and results
+  console.log("Matched Words:", matchedWords);
+  console.log("Similarity Results:", results);
 
   const highlightedText = highlightMatches(inputText, matchedWords);
 
