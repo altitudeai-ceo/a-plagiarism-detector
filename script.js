@@ -1,7 +1,6 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 function calculateJaccardSimilarity(text1, text2) {
-  console.log("Calculating similarity...");
   const set1 = new Set(text1.split(/\s+/));
   const set2 = new Set(text2.split(/\s+/));
 
@@ -12,7 +11,6 @@ function calculateJaccardSimilarity(text1, text2) {
 }
 
 async function checkText() {
-  console.log("Analyze button clicked.");
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
   const resultDiv = document.getElementById("result");
@@ -30,15 +28,14 @@ async function checkText() {
     const fileType = file.type;
 
     if (fileType === "application/pdf") {
-      console.log("PDF file detected.");
-      extractTextFromPDF(file)
-        .then((pdfText) => performPlagiarismCheck(pdfText))
-        .catch((error) => {
-          console.error("Error extracting text from PDF:", error);
-          resultDiv.innerHTML = "<p>Error reading the PDF file. Please try again.</p>";
-        });
+      try {
+        const pdfText = await extractTextFromPDF(file);
+        performPlagiarismCheck(pdfText);
+      } catch (error) {
+        console.error("Error extracting text from PDF:", error);
+        resultDiv.innerHTML = "<p>Error reading the PDF file. Please try again.</p>";
+      }
     } else if (fileType === "text/plain") {
-      console.log("TXT file detected.");
       const reader = new FileReader();
 
       reader.onload = function (e) {
@@ -47,8 +44,7 @@ async function checkText() {
       };
 
       reader.onerror = function () {
-        console.error("Error reading the TXT file.");
-        resultDiv.innerHTML = "<p>Error reading the file. Please try again.</p>";
+        resultDiv.innerHTML = "<p>Error reading the TXT file. Please try again.</p>";
       };
 
       reader.readAsText(file);
@@ -76,7 +72,6 @@ async function extractTextFromPDF(file) {
 }
 
 function performPlagiarismCheck(inputText) {
-  console.log("Performing plagiarism check...");
   const resultDiv = document.getElementById("result");
 
   // Reference documents
@@ -86,16 +81,12 @@ function performPlagiarismCheck(inputText) {
     "You can add more documents here for comparison.",
   ];
 
-  console.log("Reference documents:", referenceDocuments);
-
   // Calculate similarities
   const results = referenceDocuments.map((doc, index) => ({
     document: `Reference Document ${index + 1}`,
     similarity: calculateJaccardSimilarity(inputText, doc),
     text: doc, // Include full text of the reference document
   }));
-
-  console.log("Results:", results);
 
   // Filter matches with similarity > 0
   const matches = results.filter((r) => r.similarity > 0);
