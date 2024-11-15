@@ -15,27 +15,32 @@ app.post("/check-plagiarism", async (req, res) => {
   console.log("Received text:", text);
   console.log("Reference documents:", documents);
 
-  if (!text || !documents) {
-    console.error("Missing text or documents in request body.");
-    return res.status(400).json({ error: "Text and documents are required." });
+  if (!text || !documents || !Array.isArray(documents)) {
+    console.error("Invalid request. Missing text or documents.");
+    return res.status(400).json({ error: "Text and an array of documents are required." });
   }
 
   try {
     // Initialize HookeJs
     const hooke = new Hooke();
 
-    // Compare input text with documents
-    const result = hooke.detect(text, documents);
+    // Compare input text with reference documents
+    const results = documents.map((doc) => ({
+      document: doc,
+      similarity: hooke.detect(text, doc).similarityPercentage,
+    }));
 
-    console.log("Plagiarism detection result:", result);
+    // Calculate overall similarity
+    const maxSimilarity = Math.max(...results.map((r) => r.similarity));
 
-    // Return similarity percentage and matches
+    console.log("Detection results:", results);
+
     res.json({
-      similarityScore: result.similarityPercentage || 0,
-      matches: result.matches || [],
+      similarityScore: maxSimilarity,
+      matches: results.filter((r) => r.similarity > 0),
     });
   } catch (error) {
-    console.error("Error during detection:", error);
+    console.error("Error during detection:", error.message);
     res.status(500).json({ error: "Error detecting plagiarism." });
   }
 });
