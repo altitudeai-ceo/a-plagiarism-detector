@@ -1,3 +1,6 @@
+// Confirm if pdf-lib is loaded
+console.log("PDF-lib loaded:", window.pdfLib ? "Yes" : "No");
+
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 async function extractTextFromPDF(file) {
@@ -15,20 +18,22 @@ async function extractTextFromPDF(file) {
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-    const pageText = page.getTextContent().items.map((item) => item.str).join(" ");
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item) => item.str).join(" ");
     fullText += pageText + " ";
   }
 
+  console.log("Extracted Text from PDF:", fullText);
   return fullText;
 }
 
 function normalizeText(text) {
   return text
-    .normalize("NFKD")
+    .normalize("NFKD") // Normalize Unicode (e.g., accented characters)
     .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII characters
     .replace(/[.,!?;:()]/g, "") // Remove punctuation
-    .toLowerCase()
-    .trim();
+    .toLowerCase() // Convert to lowercase
+    .trim(); // Remove extra spaces
 }
 
 function tokenizeText(text) {
