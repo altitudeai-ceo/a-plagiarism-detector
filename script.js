@@ -1,42 +1,29 @@
-// Confirm if pdf-lib is loaded
-console.log("PDF-lib loaded:", window.pdfLib ? "Yes" : "No");
-
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 async function extractTextFromPDF(file) {
-  if (!window.pdfLib || !window.pdfLib.PDFDocument) {
-    console.error("pdf-lib library is not loaded. Please check the script inclusion.");
-    throw new Error("pdf-lib library not found.");
+  if (!window.pdfjsLib) {
+    console.error("PDF.js library is not loaded. Please check the script inclusion.");
+    throw new Error("PDF.js library not found.");
   }
 
-  const { PDFDocument } = window.pdfLib;
-  const arrayBuffer = await file.arrayBuffer();
-  console.log("Extracting text from PDF file:", file.name);
+  const fileReader = new FileReader();
+  const arrayBuffer = await new Promise((resolve) => {
+    fileReader.onload = (e) => resolve(e.target.result);
+    fileReader.readAsArrayBuffer(file);
+  });
 
-  try {
-    const pdfDoc = await PDFDocument.load(arrayBuffer);
-    console.log("PDF successfully loaded");
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = "";
 
-    let fullText = "";
-    const pages = pdfDoc.getPages();
-
-    for (let i = 0; i < pages.length; i++) {
-      try {
-        const page = pages[i];
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item) => item.str).join(" ");
-        fullText += pageText + " ";
-      } catch (err) {
-        console.error(`Error extracting text from page ${i + 1}:`, err);
-      }
-    }
-
-    console.log("Extracted Text from PDF:", fullText);
-    return fullText;
-  } catch (err) {
-    console.error("Error loading PDF:", err);
-    throw err;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item) => item.str).join(" ");
+    fullText += pageText + " ";
   }
+
+  console.log("Extracted Text from PDF:", fullText);
+  return fullText;
 }
 
 function normalizeText(text) {
