@@ -1,18 +1,23 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 function calculatePhraseSimilarity(inputText, referenceText) {
-  const inputPhrases = generatePhrases(inputText, 4); // Use 4-word phrases
+  // Generate phrases from input and reference text
+  const inputPhrases = generatePhrases(inputText, 4);
   const referencePhrases = generatePhrases(referenceText, 4);
 
+  // Debugging outputs
   console.log("Input Phrases:", inputPhrases);
   console.log("Reference Phrases:", referencePhrases);
 
+  // Find matching phrases
   const matchedPhrases = inputPhrases.filter((phrase) =>
     referencePhrases.includes(phrase)
   );
 
+  // Debugging output for matched phrases
   console.log("Matched Phrases:", matchedPhrases);
 
+  // Calculate similarity percentage
   const similarityPercentage =
     (matchedPhrases.length / referencePhrases.length) * 100;
 
@@ -23,13 +28,16 @@ function calculatePhraseSimilarity(inputText, referenceText) {
 }
 
 function generatePhrases(text, n = 4) {
-  // Normalize text: remove punctuation and convert to lowercase
-  const cleanText = text.replace(/[.,!?;:()]/g, "").toLowerCase();
+  // Normalize text: remove punctuation, convert to lowercase, trim spaces
+  const cleanText = text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
   const words = cleanText.split(/\s+/);
+
+  // Generate n-word phrases
   const phrases = [];
   for (let i = 0; i <= words.length - n; i++) {
     phrases.push(words.slice(i, i + n).join(" "));
   }
+
   return phrases;
 }
 
@@ -37,6 +45,7 @@ function highlightMatches(inputText, matchedPhrases) {
   let highlightedText = inputText;
 
   matchedPhrases.forEach((phrase) => {
+    // Create a regex for the matched phrase
     const regex = new RegExp(`\\b${phrase}\\b`, "gi");
     highlightedText = highlightedText.replace(
       regex,
