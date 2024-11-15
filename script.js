@@ -71,9 +71,10 @@ async function checkText() {
   const resultDiv = document.getElementById("result");
   let inputText = inputTextArea.value;
 
-  resultDiv.style.display = "block";
+  resultDiv.style.display = "none";
 
   if (!inputText.trim() && !fileInput.files.length) {
+    resultDiv.style.display = "block";
     resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
     return;
   }
@@ -84,6 +85,7 @@ async function checkText() {
       try {
         inputText = await extractTextFromPDF(file);
       } catch (error) {
+        resultDiv.style.display = "block";
         resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
         console.error(error);
         return;
@@ -140,6 +142,7 @@ function performPlagiarismCheck(inputText) {
   const highlightedText = highlightMatches(inputText, matchedWords);
 
   if (highestSimilarity > 0) {
+    resultDiv.style.display = "block";
     resultDiv.innerHTML = `
       <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
       <p><span>Matches Found:</span> ${matchedWords.length}</p>
@@ -156,6 +159,7 @@ function performPlagiarismCheck(inputText) {
       </ul>
     `;
   } else {
+    resultDiv.style.display = "block";
     resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
   }
 }
