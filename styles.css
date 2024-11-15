@@ -1,17 +1,17 @@
 /* General Styles */
 body {
   font-family: Arial, sans-serif;
+  background-color: #0b1120; /* Dark background */
+  color: white; /* Light text color */
   margin: 0;
   padding: 0;
-  background-color: #f4f4f4;
-  color: #333;
 }
 
 header {
   text-align: center;
-  padding: 1rem;
-  background-color: #4caf50;
-  color: white;
+  padding: 1.5rem;
+  background-color: #1f2937; /* Dark gray header */
+  color: #5bc0be; /* Light teal header text */
 }
 
 header h1 {
@@ -24,9 +24,10 @@ header h1 {
   margin: 2rem auto;
   padding: 2rem;
   max-width: 800px;
-  background: white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background: #112d4e; /* Dark blue container */
   border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
 textarea,
@@ -37,6 +38,8 @@ input[type="file"] {
   font-size: 1rem;
   border: 1px solid #ddd;
   border-radius: 4px;
+  background: #1f2937; /* Input background matches header */
+  color: white;
 }
 
 textarea {
@@ -49,7 +52,7 @@ button {
   padding: 0.8rem 1.5rem;
   font-size: 1rem;
   color: white;
-  background-color: #4caf50;
+  background-color: #5bc0be;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -57,15 +60,15 @@ button {
 }
 
 button:hover {
-  background-color: #45a049;
+  background-color: #3a9fa8; /* Darker teal on hover */
 }
 
 /* Results Section */
 .result {
   margin-top: 2rem;
   padding: 1rem;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: #1f2937; /* Match input field background */
+  border: 1px solid #5bc0be;
   border-radius: 4px;
   font-size: 1rem;
 }
@@ -76,7 +79,7 @@ button:hover {
 
 .result span {
   font-weight: bold;
-  color: #4caf50;
+  color: #5bc0be; /* Light teal for matched document text */
 }
 
 .result ul {
@@ -87,21 +90,22 @@ button:hover {
 .result ul li {
   margin: 0.5rem 0;
   padding: 0.5rem;
-  border-left: 4px solid #4caf50;
-  background: #f4fff4;
+  border-left: 4px solid #5bc0be;
+  background: #112d4e;
 }
 
 /* Highlighted Text Section */
 .highlight {
-  background-color: yellow;
+  background-color: yellow; /* Highlight plagiarized words */
   font-weight: bold;
+  color: black; /* Ensure readability on yellow */
 }
 
 .highlighted-text {
   margin: 1rem 0;
   padding: 0.5rem;
-  border: 1px solid #ddd;
-  background: #f9f9f9;
+  border: 1px solid #5bc0be;
+  background: #1f2937; /* Match results background */
   font-family: monospace;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -112,7 +116,7 @@ footer {
   text-align: center;
   padding: 1rem;
   margin-top: 2rem;
-  background-color: #f4f4f4;
-  color: #777;
+  background-color: #1f2937;
+  color: #5bc0be;
   font-size: 0.9rem;
 }
