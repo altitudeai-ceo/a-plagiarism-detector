@@ -1,80 +1,118 @@
+/* General Styles */
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #0b1120;
-  color: #ffffff;
-  overflow-x: hidden;
+  background-color: #f4f4f4;
+  color: #333;
 }
 
 header {
   text-align: center;
-  padding: 2rem 0;
-  background-color: #0d1b2a;
-  color: #ffffff;
+  padding: 1rem;
+  background-color: #4caf50;
+  color: white;
 }
 
 header h1 {
-  font-size: 2.5rem;
   margin: 0;
-  color: #5bc0be;
+  font-size: 2rem;
 }
 
+/* Main Container */
 .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  margin: 2rem auto;
   padding: 2rem;
-  margin: 0 auto;
   max-width: 800px;
-  background: #112d4e;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
-textarea, input[type="file"] {
+textarea,
+input[type="file"] {
   width: 100%;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 0.8rem;
+  margin: 1rem 0;
   font-size: 1rem;
-  border: none;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  background: #3e517a;
-  color: #ffffff;
+}
+
+textarea {
+  height: 120px;
+  resize: vertical;
 }
 
 button {
-  background: #5bc0be;
-  color: #ffffff;
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
   font-size: 1rem;
-  padding: 1rem 2rem;
+  color: white;
+  background-color: #4caf50;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 1rem;
   transition: background-color 0.3s ease-in-out;
 }
 
 button:hover {
-  background: #1b8a9d;
+  background-color: #45a049;
 }
 
+/* Results Section */
 .result {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   padding: 1rem;
-  background: #3e517a;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  font-size: 1rem;
+}
+
+.result p {
+  margin: 0.5rem 0;
 }
 
 .result span {
   font-weight: bold;
-  color: #5bc0be;
+  color: #4caf50;
 }
 
+.result ul {
+  list-style: none;
+  padding: 0;
+}
+
+.result ul li {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-left: 4px solid #4caf50;
+  background: #f4fff4;
+}
+
+/* Highlighted Text Section */
+.highlight {
+  background-color: yellow;
+  font-weight: bold;
+}
+
+.highlighted-text {
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Footer */
 footer {
-  margin-top: 3rem;
   text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
+  background-color: #f4f4f4;
+  color: #777;
   font-size: 0.9rem;
-  color: #ffffff;
 }
