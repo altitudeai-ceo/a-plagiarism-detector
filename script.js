@@ -9,22 +9,34 @@ async function extractTextFromPDF(file) {
     throw new Error("pdf-lib library not found.");
   }
 
-  const { PDFDocument } = window.pdfLib; // Access PDFDocument from pdf-lib
+  const { PDFDocument } = window.pdfLib;
   const arrayBuffer = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  console.log("Extracting text from PDF file:", file.name);
 
-  let fullText = "";
-  const pages = pdfDoc.getPages();
+  try {
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    console.log("PDF successfully loaded");
 
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => item.str).join(" ");
-    fullText += pageText + " ";
+    let fullText = "";
+    const pages = pdfDoc.getPages();
+
+    for (let i = 0; i < pages.length; i++) {
+      try {
+        const page = pages[i];
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item) => item.str).join(" ");
+        fullText += pageText + " ";
+      } catch (err) {
+        console.error(`Error extracting text from page ${i + 1}:`, err);
+      }
+    }
+
+    console.log("Extracted Text from PDF:", fullText);
+    return fullText;
+  } catch (err) {
+    console.error("Error loading PDF:", err);
+    throw err;
   }
-
-  console.log("Extracted Text from PDF:", fullText);
-  return fullText;
 }
 
 function normalizeText(text) {
