@@ -3,21 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plagiarism and AI Checker</title>
+  <title>Plagiarism Checker</title>
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Load PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <!-- Load the updated JavaScript file -->
   <script defer src="script.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>Plagiarism and AI Checker</h1>
+    <h1>Check Your Work</h1>
+
+    <!-- Text input area -->
     <textarea id="inputText" placeholder="Paste your text here..."></textarea>
     <p>OR</p>
+
+    <!-- File input for PDF and text files -->
     <input type="file" id="fileInput" accept=".txt, .pdf">
     <button id="analyzeButton">Analyze</button>
-    <div class="result-container" style="display: none;">
-      <div id="result" class="result"></div>
-    </div>
+
+    <!-- Result display area -->
+    <div id="result" class="result"></div>
   </div>
 </body>
 </html>
