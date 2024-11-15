@@ -1,11 +1,6 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 async function extractTextFromPDF(file) {
-  if (!window.pdfjsLib) {
-    console.error("PDF.js library is not loaded. Please check the script inclusion.");
-    throw new Error("PDF.js library not found.");
-  }
-
   const fileReader = new FileReader();
   const arrayBuffer = await new Promise((resolve) => {
     fileReader.onload = (e) => resolve(e.target.result);
@@ -34,46 +29,30 @@ function normalizeText(text) {
     .trim();
 }
 
-function tokenizeText(text) {
-  return normalizeText(text).split(/\s+/);
-}
+async function searchDuckDuckGo(query) {
+  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&pretty=1`;
+  const response = await fetch(url);
+  const data = await response.json();
 
-function calculateSimilarity(inputText, referenceText) {
-  const inputTokens = tokenizeText(inputText);
-  const referenceTokens = tokenizeText(referenceText);
-
-  const matchedWords = [...new Set(inputTokens.filter((word) => referenceTokens.includes(word)))];
-  const similarityPercentage = (matchedWords.length / inputTokens.length) * 100;
-
-  return {
-    similarity: similarityPercentage.toFixed(2),
-    matchedWords: matchedWords,
-  };
-}
-
-function highlightMatches(inputText, matchedWords) {
-  let highlightedText = normalizeText(inputText);
-
-  matchedWords.forEach((word) => {
-    const regex = new RegExp(`\\b${word}\\b`, "gi");
-    highlightedText = highlightedText.replace(
-      regex,
-      `<span class="highlight">${word}</span>`
-    );
-  });
-
-  return highlightedText;
+  // Parse results
+  return data.RelatedTopics.map((topic) => ({
+    title: topic.Text,
+    link: topic.FirstURL,
+  }));
 }
 
 async function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
   const resultDiv = document.getElementById("result");
+  const resultContainer = document.querySelector(".result-container");
   let inputText = inputTextArea.value;
 
-  resultDiv.style.display = "block";
+  // Hide result container until analysis is done
+  resultContainer.style.display = "none";
 
   if (!inputText.trim() && !fileInput.files.length) {
+    resultContainer.style.display = "block";
     resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
     return;
   }
@@ -84,6 +63,7 @@ async function checkText() {
       try {
         inputText = await extractTextFromPDF(file);
       } catch (error) {
+        resultContainer.style.display = "block";
         resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
         console.error(error);
         return;
@@ -97,65 +77,34 @@ async function checkText() {
     }
   }
 
-  performPlagiarismCheck(inputText);
-}
+  resultContainer.style.display = "block";
+  resultDiv.innerHTML = "<p>Analyzing...</p>";
 
-function performPlagiarismCheck(inputText) {
-  const resultDiv = document.getElementById("result");
+  const queries = inputText.match(/.{1,100}/g); // Split into 100-character chunks
+  const results = [];
 
-  const referenceDocuments = [
-    {
-      text: "This is a reference document that discusses certain topics in detail.",
-      url: "https://example.com/document1",
-    },
-    {
-      text: "Here is another example of a document to compare against plagiarism cases.",
-      url: "https://example.com/document2",
-    },
-    {
-      text: "Adding more detailed content ensures better matching and testing results.",
-      url: "https://example.com/document3",
-    },
-  ];
+  for (const query of queries) {
+    try {
+      const matches = await searchDuckDuckGo(query);
+      results.push(...matches);
+    } catch (error) {
+      console.error("Error searching DuckDuckGo:", error);
+    }
+  }
 
-  const normalizedInput = normalizeText(inputText);
-
-  let highestSimilarity = 0;
-  let matchedWords = [];
-  const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc.text));
-
-    if (similarity > highestSimilarity) highestSimilarity = similarity;
-    matchedWords = [...matchedWords, ...words];
-
-    return {
-      document: `Reference Document ${index + 1}`,
-      similarity,
-      url: doc.url,
-    };
-  });
-
-  matchedWords = [...new Set(matchedWords)];
-
-  const highlightedText = highlightMatches(inputText, matchedWords);
-
-  if (highestSimilarity > 0) {
+  if (results.length > 0) {
     resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
-      <p><span>Matches Found:</span> ${matchedWords.length}</p>
-      <p>Analyzed Text with Highlighted Matches:</p>
-      <div class="highlighted-text">${highlightedText}</div>
+      <p>Plagiarism Matches Found:</p>
       <ul>
         ${results
-          .filter((r) => r.similarity > 0)
           .map(
-            (match) =>
-              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}% - <a href="${match.url}" target="_blank">View Document</a></li>`
+            (result) =>
+              `<li><a href="${result.link}" target="_blank">${result.title}</a></li>`
           )
           .join("")}
       </ul>
     `;
   } else {
-    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
+    resultDiv.innerHTML = "<p>No matches found.</p>";
   }
 }
