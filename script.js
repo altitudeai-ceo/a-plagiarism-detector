@@ -1,21 +1,43 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
-function calculateJaccardSimilarity(text1, text2) {
-  const set1 = new Set(text1.split(/\s+/));
-  const set2 = new Set(text2.split(/\s+/));
+function calculatePhraseSimilarity(inputText, referenceText) {
+  const inputPhrases = generatePhrases(inputText);
+  const referencePhrases = generatePhrases(referenceText);
 
-  const intersection = new Set([...set1].filter((word) => set2.has(word)));
-  const union = new Set([...set1, ...set2]);
+  const intersection = inputPhrases.filter((phrase) =>
+    referencePhrases.includes(phrase)
+  );
 
-  return ((intersection.size / union.size) * 100).toFixed(2); // Return percentage
+  const similarityPercentage =
+    (intersection.length / referencePhrases.length) * 100;
+
+  return {
+    similarity: similarityPercentage.toFixed(2),
+    matchedPhrases: intersection,
+  };
+}
+
+function generatePhrases(text, n = 3) {
+  const words = text.split(/\s+/);
+  const phrases = [];
+  for (let i = 0; i <= words.length - n; i++) {
+    phrases.push(words.slice(i, i + n).join(" "));
+  }
+  return phrases;
 }
 
 function highlightMatches(inputText, matchedPhrases) {
-  // Create a regex to match entire phrases
-  const regex = new RegExp(`\\b(${matchedPhrases.join('|')})\\b`, 'gi');
+  let highlightedText = inputText;
 
-  // Replace matched phrases with highlighted spans
-  return inputText.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+  matchedPhrases.forEach((phrase) => {
+    const regex = new RegExp(`\\b${phrase}\\b`, "gi");
+    highlightedText = highlightedText.replace(
+      regex,
+      `<span class="highlight">${phrase}</span>`
+    );
+  });
+
+  return highlightedText;
 }
 
 async function checkText() {
@@ -79,43 +101,42 @@ function performPlagiarismCheck(inputText) {
     "You can add more documents here for comparison.",
   ];
 
-  // Calculate similarities and collect matched phrases
-  const matches = [];
-  const matchedPhrases = [];
+  let highestSimilarity = 0;
+  let matchedPhrases = [];
   const results = referenceDocuments.map((doc, index) => {
-    const similarity = calculateJaccardSimilarity(inputText, doc);
-    if (similarity > 0) {
-      matches.push({
-        document: `Reference Document ${index + 1}`,
-        similarity,
-        text: doc,
-      });
-      matchedPhrases.push(...doc.split(/\s+/));
-    }
+    const { similarity, matchedPhrases: phrases } = calculatePhraseSimilarity(
+      inputText,
+      doc
+    );
+    if (similarity > highestSimilarity) highestSimilarity = similarity;
+    matchedPhrases = [...matchedPhrases, ...phrases];
+
     return {
       document: `Reference Document ${index + 1}`,
       similarity,
-      text: doc,
+      matchedPhrases: phrases,
     };
   });
 
-  // Highlight matches in the input text
+  matchedPhrases = [...new Set(matchedPhrases)]; // Remove duplicates
+
   const highlightedText = highlightMatches(inputText, matchedPhrases);
 
   // Display results
-  if (matches.length > 0) {
+  if (highestSimilarity > 0) {
     resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${
-        Math.max(...matches.map((r) => r.similarity))
-      }%</p>
-      <p><span>Matches Found:</span> ${matches.length}</p>
+      <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
+      <p><span>Matches Found:</span> ${
+        matchedPhrases.length
+      }</p>
       <p>Analyzed Text with Highlighted Matches:</p>
       <div class="highlighted-text">${highlightedText}</div>
       <ul>
-        ${matches
+        ${results
+          .filter((r) => r.similarity > 0)
           .map(
             (match) =>
-              `<li><b>${match.document}:</b> "${match.text}" - <b>Similarity:</b> ${match.similarity}%</li>`
+              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}%</li>`
           )
           .join("")}
       </ul>
