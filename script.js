@@ -1,5 +1,23 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
+async function extractTextFromPDF(file) {
+  const { PDFDocument } = window.pdfLib; // Use pdf-lib library
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+  let fullText = "";
+  const pages = pdfDoc.getPages();
+
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    const text = await page.getTextContent();
+    const pageText = text.items.map((item) => item.str).join(" ");
+    fullText += pageText + " ";
+  }
+
+  return fullText;
+}
+
 function normalizeText(text) {
   // Remove non-printable characters, normalize Unicode, and strip punctuation
   return text
@@ -59,7 +77,7 @@ function highlightMatches(inputText, matchedWords) {
   return highlightedText;
 }
 
-function checkText() {
+async function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
   const resultDiv = document.getElementById("result");
@@ -74,12 +92,18 @@ function checkText() {
 
   if (fileInput.files.length) {
     const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => performPlagiarismCheck(e.target.result);
-    reader.readAsText(file, "UTF-8"); // Force UTF-8 encoding
-  } else {
-    performPlagiarismCheck(inputText);
+    if (file.type === "application/pdf") {
+      inputText = await extractTextFromPDF(file);
+    } else {
+      const reader = new FileReader();
+      inputText = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsText(file, "UTF-8"); // Force UTF-8 encoding
+      });
+    }
   }
+
+  performPlagiarismCheck(inputText);
 }
 
 function performPlagiarismCheck(inputText) {
