@@ -1,23 +1,20 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 function calculatePhraseSimilarity(inputText, referenceText) {
-  // Generate phrases from input and reference text
-  const inputPhrases = generatePhrases(inputText, 4);
+  const inputPhrases = generatePhrases(inputText, 4); // Generate 4-word phrases
   const referencePhrases = generatePhrases(referenceText, 4);
 
-  // Debugging outputs
   console.log("Input Phrases:", inputPhrases);
   console.log("Reference Phrases:", referencePhrases);
 
-  // Find matching phrases
+  // Find exact matches
   const matchedPhrases = inputPhrases.filter((phrase) =>
     referencePhrases.includes(phrase)
   );
 
-  // Debugging output for matched phrases
   console.log("Matched Phrases:", matchedPhrases);
 
-  // Calculate similarity percentage
+  // Calculate similarity
   const similarityPercentage =
     (matchedPhrases.length / referencePhrases.length) * 100;
 
@@ -32,12 +29,15 @@ function generatePhrases(text, n = 4) {
   const cleanText = text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
   const words = cleanText.split(/\s+/);
 
+  console.log("Clean Text:", cleanText);
+
   // Generate n-word phrases
   const phrases = [];
   for (let i = 0; i <= words.length - n; i++) {
     phrases.push(words.slice(i, i + n).join(" "));
   }
 
+  console.log(`Generated ${n}-word Phrases:`, phrases);
   return phrases;
 }
 
@@ -45,7 +45,6 @@ function highlightMatches(inputText, matchedPhrases) {
   let highlightedText = inputText;
 
   matchedPhrases.forEach((phrase) => {
-    // Create a regex for the matched phrase
     const regex = new RegExp(`\\b${phrase}\\b`, "gi");
     highlightedText = highlightedText.replace(
       regex,
@@ -117,6 +116,9 @@ function performPlagiarismCheck(inputText) {
     "You can add even more reference documents here for testing.",
   ];
 
+  console.log("Input Text:", inputText);
+  console.log("Reference Documents:", referenceDocuments);
+
   let highestSimilarity = 0;
   let matchedPhrases = [];
   const results = referenceDocuments.map((doc, index) => {
@@ -135,6 +137,8 @@ function performPlagiarismCheck(inputText) {
   });
 
   matchedPhrases = [...new Set(matchedPhrases)]; // Remove duplicates
+
+  console.log("Final Matched Phrases:", matchedPhrases);
 
   const highlightedText = highlightMatches(inputText, matchedPhrases);
 
