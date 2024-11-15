@@ -31,3 +31,47 @@ async function checkText() {
     await sendForDetection(inputText);
   }
 }
+
+async function sendForDetection(text) {
+  const resultDiv = document.getElementById("result");
+
+  console.log("Sending text to the backend:", text);
+
+  try {
+    const payload = {
+      text: text,
+      documents: [
+        "This is a reference document.",
+        "Another document to compare against.",
+        "Add more documents as needed.",
+      ],
+    };
+
+    const response = await fetch("http://localhost:3000/check-plagiarism", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch results from the backend.");
+    }
+
+    const data = await response.json();
+
+    console.log("Response data:", data);
+
+    resultDiv.innerHTML = `
+      <p><span>Similarity Score:</span> ${data.similarityScore}%</p>
+      <p><span>Matches Found:</span> ${data.matches.length}</p>
+    `;
+  } catch (error) {
+    console.error("Error occurred:", error);
+    resultDiv.innerHTML =
+      "<p>An error occurred while analyzing the text. Please try again later.</p>";
+  }
+}
