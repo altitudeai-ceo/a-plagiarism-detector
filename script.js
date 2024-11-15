@@ -77,8 +77,8 @@ async function checkText() {
     }
   }
 
-  resultContainer.style.display = "block";
   resultDiv.innerHTML = "<p>Analyzing...</p>";
+  resultContainer.style.display = "block";
 
   const queries = inputText.match(/.{1,100}/g); // Split into 100-character chunks
   const results = [];
