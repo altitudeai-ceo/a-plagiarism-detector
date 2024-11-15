@@ -11,15 +11,14 @@ function calculateJaccardSimilarity(text1, text2) {
 }
 
 function highlightMatches(inputText, referenceWords) {
-  // Split input text into words and preserve spaces
-  const words = inputText.split(/(\s+)/); // This preserves spaces as separate elements
+  const words = inputText.split(/(\s+)/);
   const highlightedWords = words.map((word) => {
-    const cleanWord = word.replace(/[.,!?]/g, "").toLowerCase(); // Remove punctuation and lowercase
+    const cleanWord = word.replace(/[.,!?]/g, "").toLowerCase();
     return referenceWords.has(cleanWord)
       ? `<span class="highlight">${word}</span>`
       : word;
   });
-  return highlightedWords.join(""); // Join the words back together
+  return highlightedWords.join("");
 }
 
 async function checkText() {
@@ -40,28 +39,12 @@ async function checkText() {
     const fileType = file.type;
 
     if (fileType === "application/pdf") {
-      try {
-        const pdfText = await extractTextFromPDF(file);
-        performPlagiarismCheck(pdfText);
-      } catch (error) {
-        console.error("Error extracting text from PDF:", error);
-        resultDiv.innerHTML = "<p>Error reading the PDF file. Please try again.</p>";
-      }
+      const pdfText = await extractTextFromPDF(file);
+      performPlagiarismCheck(pdfText);
     } else if (fileType === "text/plain") {
       const reader = new FileReader();
-
-      reader.onload = function (e) {
-        inputText = e.target.result;
-        performPlagiarismCheck(inputText);
-      };
-
-      reader.onerror = function () {
-        resultDiv.innerHTML = "<p>Error reading the TXT file. Please try again.</p>";
-      };
-
+      reader.onload = (e) => performPlagiarismCheck(e.target.result);
       reader.readAsText(file);
-    } else {
-      resultDiv.innerHTML = "<p>Unsupported file format. Please upload a .txt or .pdf file.</p>";
     }
   } else {
     performPlagiarismCheck(inputText);
@@ -86,53 +69,20 @@ async function extractTextFromPDF(file) {
 function performPlagiarismCheck(inputText) {
   const resultDiv = document.getElementById("result");
 
-  // Reference documents
   const referenceDocuments = [
     "This is a reference document.",
     "Another example of a document to compare against.",
-    "You can add more documents here for comparison.",
   ];
 
-  // Calculate similarities and collect matched words
-  const referenceWords = new Set();
-  const results = referenceDocuments.map((doc, index) => {
-    // Add all words from the document to the referenceWords set
-    doc.split(/\s+/).forEach((word) =>
-      referenceWords.add(word.replace(/[.,!?]/g, "").toLowerCase())
-    );
+  const referenceWords = new Set(
+    referenceDocuments.flatMap((doc) =>
+      doc.split(/\s+/).map((word) => word.replace(/[.,!?]/g, "").toLowerCase())
+    )
+  );
 
-    return {
-      document: `Reference Document ${index + 1}`,
-      similarity: calculateJaccardSimilarity(inputText, doc),
-      text: doc,
-    };
-  });
-
-  // Highlight matches in the input text
   const highlightedText = highlightMatches(inputText, referenceWords);
-
-  // Filter matches with similarity > 0
-  const matches = results.filter((r) => r.similarity > 0);
-
-  if (matches.length > 0) {
-    // Display results with matching reference documents
-    resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${
-        Math.max(...matches.map((r) => r.similarity))
-      }%</p>
-      <p><span>Matches Found:</span> ${matches.length}</p>
-      <p>Analyzed Text with Highlighted Matches:</p>
-      <div class="highlighted-text">${highlightedText}</div>
-      <ul>
-        ${matches
-          .map(
-            (match) =>
-              `<li><b>${match.document}:</b> "${match.text}" - <b>Similarity:</b> ${match.similarity}%</li>`
-          )
-          .join("")}
-      </ul>
-    `;
-  } else {
-    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
-  }
+  resultDiv.innerHTML = `
+    <p>Analyzed Text with Highlighted Matches:</p>
+    <div class="highlighted-text">${highlightedText}</div>
+  `;
 }
