@@ -5,6 +5,47 @@ function normalizeText(text) {
   return text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
 }
 
+function generatePhrases(text, n = 3) {
+  // Normalize text
+  const cleanText = normalizeText(text);
+  const words = cleanText.split(/\s+/);
+
+  console.log("Normalized Text:", cleanText);
+
+  // Generate n-word phrases
+  const phrases = [];
+  for (let i = 0; i <= words.length - n; i++) {
+    phrases.push(words.slice(i, i + n).join(" "));
+  }
+
+  console.log(`Generated ${n}-word Phrases:`, phrases);
+  return phrases;
+}
+
+function calculatePhraseSimilarity(inputText, referenceText) {
+  const inputPhrases = generatePhrases(inputText, 3); // Use 3-word phrases
+  const referencePhrases = generatePhrases(referenceText, 3);
+
+  console.log("Input Phrases:", inputPhrases);
+  console.log("Reference Phrases:", referencePhrases);
+
+  // Find exact matches
+  const matchedPhrases = inputPhrases.filter((phrase) =>
+    referencePhrases.includes(phrase)
+  );
+
+  console.log("Matched Phrases:", matchedPhrases);
+
+  // Calculate similarity
+  const similarityPercentage =
+    (matchedPhrases.length / referencePhrases.length) * 100;
+
+  return {
+    similarity: similarityPercentage.toFixed(2),
+    matchedPhrases: matchedPhrases,
+  };
+}
+
 function highlightMatches(inputText, matchedPhrases) {
   let highlightedText = inputText;
 
@@ -17,27 +58,6 @@ function highlightMatches(inputText, matchedPhrases) {
   });
 
   return highlightedText;
-}
-
-function calculateSimilarity(inputText, referenceText) {
-  const normalizedInput = normalizeText(inputText);
-  const normalizedReference = normalizeText(referenceText);
-
-  const inputWords = normalizedInput.split(/\s+/);
-  const referenceWords = normalizedReference.split(/\s+/);
-
-  // Find matches
-  const matchedWords = inputWords.filter((word) =>
-    referenceWords.includes(word)
-  );
-
-  const similarityPercentage =
-    (matchedWords.length / referenceWords.length) * 100;
-
-  return {
-    similarity: similarityPercentage.toFixed(2),
-    matchedWords: matchedWords,
-  };
 }
 
 function checkText() {
@@ -67,41 +87,41 @@ function performPlagiarismCheck(inputText) {
   const resultDiv = document.getElementById("result");
 
   const referenceDocuments = [
-    "This is a reference document that discusses certain topics.",
-    "Here is another example of a document to compare against.",
-    "You can add even more reference documents here for testing.",
+    "This is a reference document that discusses various topics in detail.",
+    "Here is another example of a detailed document for testing plagiarism.",
+    "Adding more text here helps ensure better matching for comparison purposes.",
   ];
 
   console.log("Input Text:", inputText);
   console.log("Reference Documents:", referenceDocuments);
 
   let highestSimilarity = 0;
-  let matchedWords = [];
+  let matchedPhrases = [];
   const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedWords: words } = calculateSimilarity(
+    const { similarity, matchedPhrases: phrases } = calculatePhraseSimilarity(
       inputText,
       doc
     );
     if (similarity > highestSimilarity) highestSimilarity = similarity;
-    matchedWords = [...matchedWords, ...words];
+    matchedPhrases = [...matchedPhrases, ...phrases];
 
     return {
       document: `Reference Document ${index + 1}`,
       similarity,
-      matchedWords: words,
+      matchedPhrases: phrases,
     };
   });
 
-  matchedWords = [...new Set(matchedWords)]; // Remove duplicates
+  matchedPhrases = [...new Set(matchedPhrases)]; // Remove duplicates
 
-  console.log("Matched Words:", matchedWords);
+  console.log("Final Matched Phrases:", matchedPhrases);
 
-  const highlightedText = highlightMatches(inputText, matchedWords);
+  const highlightedText = highlightMatches(inputText, matchedPhrases);
 
   if (highestSimilarity > 0) {
     resultDiv.innerHTML = `
       <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
-      <p><span>Matches Found:</span> ${matchedWords.length}</p>
+      <p><span>Matches Found:</span> ${matchedPhrases.length}</p>
       <p>Analyzed Text with Highlighted Matches:</p>
       <div class="highlighted-text">${highlightedText}</div>
       <ul>
