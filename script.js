@@ -1,44 +1,8 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
-function calculatePhraseSimilarity(inputText, referenceText) {
-  const inputPhrases = generatePhrases(inputText, 4); // Generate 4-word phrases
-  const referencePhrases = generatePhrases(referenceText, 4);
-
-  console.log("Input Phrases:", inputPhrases);
-  console.log("Reference Phrases:", referencePhrases);
-
-  // Find exact matches
-  const matchedPhrases = inputPhrases.filter((phrase) =>
-    referencePhrases.includes(phrase)
-  );
-
-  console.log("Matched Phrases:", matchedPhrases);
-
-  // Calculate similarity
-  const similarityPercentage =
-    (matchedPhrases.length / referencePhrases.length) * 100;
-
-  return {
-    similarity: similarityPercentage.toFixed(2),
-    matchedPhrases: matchedPhrases,
-  };
-}
-
-function generatePhrases(text, n = 4) {
-  // Normalize text: remove punctuation, convert to lowercase, trim spaces
-  const cleanText = text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
-  const words = cleanText.split(/\s+/);
-
-  console.log("Clean Text:", cleanText);
-
-  // Generate n-word phrases
-  const phrases = [];
-  for (let i = 0; i <= words.length - n; i++) {
-    phrases.push(words.slice(i, i + n).join(" "));
-  }
-
-  console.log(`Generated ${n}-word Phrases:`, phrases);
-  return phrases;
+function normalizeText(text) {
+  // Remove punctuation, convert to lowercase, and trim whitespace
+  return text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
 }
 
 function highlightMatches(inputText, matchedPhrases) {
@@ -55,7 +19,28 @@ function highlightMatches(inputText, matchedPhrases) {
   return highlightedText;
 }
 
-async function checkText() {
+function calculateSimilarity(inputText, referenceText) {
+  const normalizedInput = normalizeText(inputText);
+  const normalizedReference = normalizeText(referenceText);
+
+  const inputWords = normalizedInput.split(/\s+/);
+  const referenceWords = normalizedReference.split(/\s+/);
+
+  // Find matches
+  const matchedWords = inputWords.filter((word) =>
+    referenceWords.includes(word)
+  );
+
+  const similarityPercentage =
+    (matchedWords.length / referenceWords.length) * 100;
+
+  return {
+    similarity: similarityPercentage.toFixed(2),
+    matchedWords: matchedWords,
+  };
+}
+
+function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
   const resultDiv = document.getElementById("result");
@@ -70,41 +55,12 @@ async function checkText() {
 
   if (fileInput.files.length) {
     const file = fileInput.files[0];
-    const fileType = file.type;
-
-    if (fileType === "application/pdf") {
-      try {
-        const pdfText = await extractTextFromPDF(file);
-        performPlagiarismCheck(pdfText);
-      } catch (error) {
-        console.error("Error extracting text from PDF:", error);
-        resultDiv.innerHTML = "<p>Error reading the PDF file. Please try again.</p>";
-      }
-    } else if (fileType === "text/plain") {
-      const reader = new FileReader();
-      reader.onload = (e) => performPlagiarismCheck(e.target.result);
-      reader.readAsText(file);
-    } else {
-      resultDiv.innerHTML = "<p>Unsupported file format. Please upload a .txt or .pdf file.</p>";
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => performPlagiarismCheck(e.target.result);
+    reader.readAsText(file);
   } else {
     performPlagiarismCheck(inputText);
   }
-}
-
-async function extractTextFromPDF(file) {
-  const pdfData = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-  let fullText = "";
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => item.str).join(" ");
-    fullText += pageText + " ";
-  }
-
-  return fullText.trim();
 }
 
 function performPlagiarismCheck(inputText) {
@@ -120,35 +76,32 @@ function performPlagiarismCheck(inputText) {
   console.log("Reference Documents:", referenceDocuments);
 
   let highestSimilarity = 0;
-  let matchedPhrases = [];
+  let matchedWords = [];
   const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedPhrases: phrases } = calculatePhraseSimilarity(
+    const { similarity, matchedWords: words } = calculateSimilarity(
       inputText,
       doc
     );
     if (similarity > highestSimilarity) highestSimilarity = similarity;
-    matchedPhrases = [...matchedPhrases, ...phrases];
+    matchedWords = [...matchedWords, ...words];
 
     return {
       document: `Reference Document ${index + 1}`,
       similarity,
-      matchedPhrases: phrases,
+      matchedWords: words,
     };
   });
 
-  matchedPhrases = [...new Set(matchedPhrases)]; // Remove duplicates
+  matchedWords = [...new Set(matchedWords)]; // Remove duplicates
 
-  console.log("Final Matched Phrases:", matchedPhrases);
+  console.log("Matched Words:", matchedWords);
 
-  const highlightedText = highlightMatches(inputText, matchedPhrases);
+  const highlightedText = highlightMatches(inputText, matchedWords);
 
-  // Display results
   if (highestSimilarity > 0) {
     resultDiv.innerHTML = `
       <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
-      <p><span>Matches Found:</span> ${
-        matchedPhrases.length
-      }</p>
+      <p><span>Matches Found:</span> ${matchedWords.length}</p>
       <p>Analyzed Text with Highlighted Matches:</p>
       <div class="highlighted-text">${highlightedText}</div>
       <ul>
