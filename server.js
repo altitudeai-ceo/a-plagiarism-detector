@@ -16,6 +16,7 @@ app.post("/check-plagiarism", async (req, res) => {
   console.log("Reference documents:", documents);
 
   if (!text || !documents) {
+    console.error("Missing text or documents in request body.");
     return res.status(400).json({ error: "Text and documents are required." });
   }
 
@@ -30,8 +31,8 @@ app.post("/check-plagiarism", async (req, res) => {
 
     // Return similarity percentage and matches
     res.json({
-      similarityScore: result.similarityPercentage,
-      matches: result.matches,
+      similarityScore: result.similarityPercentage || 0,
+      matches: result.matches || [],
     });
   } catch (error) {
     console.error("Error during detection:", error);
