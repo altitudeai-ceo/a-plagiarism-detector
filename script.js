@@ -10,23 +10,16 @@ function calculateJaccardSimilarity(text1, text2) {
   return ((intersection.size / union.size) * 100).toFixed(2); // Return percentage
 }
 
-function highlightMatches(inputText, matches) {
-  // Split input text into words
-  const words = inputText.split(/\s+/);
-
-  // Create a Set of matched words for easy lookup
-  const matchedWords = new Set(
-    matches.flatMap((match) => match.document.split(/\s+/))
-  );
-
-  // Wrap matched words with a span for highlighting
-  return words
-    .map((word) =>
-      matchedWords.has(word)
-        ? `<span class="highlight">${word}</span>`
-        : word
-    )
-    .join(" ");
+function highlightMatches(inputText, referenceWords) {
+  // Split input text into words and preserve spaces
+  const words = inputText.split(/(\s+)/); // This preserves spaces as separate elements
+  const highlightedWords = words.map((word) => {
+    const cleanWord = word.replace(/[.,!?]/g, "").toLowerCase(); // Remove punctuation and lowercase
+    return referenceWords.has(cleanWord)
+      ? `<span class="highlight">${word}</span>`
+      : word;
+  });
+  return highlightedWords.join(""); // Join the words back together
 }
 
 async function checkText() {
@@ -100,20 +93,28 @@ function performPlagiarismCheck(inputText) {
     "You can add more documents here for comparison.",
   ];
 
-  // Calculate similarities and matched content
-  const results = referenceDocuments.map((doc, index) => ({
-    document: `Reference Document ${index + 1}`,
-    similarity: calculateJaccardSimilarity(inputText, doc),
-    text: doc, // Include full text of the reference document
-  }));
+  // Calculate similarities and collect matched words
+  const referenceWords = new Set();
+  const results = referenceDocuments.map((doc, index) => {
+    // Add all words from the document to the referenceWords set
+    doc.split(/\s+/).forEach((word) =>
+      referenceWords.add(word.replace(/[.,!?]/g, "").toLowerCase())
+    );
+
+    return {
+      document: `Reference Document ${index + 1}`,
+      similarity: calculateJaccardSimilarity(inputText, doc),
+      text: doc,
+    };
+  });
+
+  // Highlight matches in the input text
+  const highlightedText = highlightMatches(inputText, referenceWords);
 
   // Filter matches with similarity > 0
   const matches = results.filter((r) => r.similarity > 0);
 
   if (matches.length > 0) {
-    // Highlight plagiarized words
-    const highlightedText = highlightMatches(inputText, matches);
-
     // Display results with matching reference documents
     resultDiv.innerHTML = `
       <p><span>Highest Similarity Score:</span> ${
