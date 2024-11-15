@@ -32,12 +32,6 @@ header h1 {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
-.container h2 {
-  color: #ffffff;
-  margin-bottom: 1rem;
-  font-size: 1.8rem;
-}
-
 textarea, input[type="file"] {
   width: 100%;
   padding: 1rem;
@@ -83,9 +77,4 @@ footer {
   text-align: center;
   font-size: 0.9rem;
   color: #ffffff;
-}
-
-footer a {
-  color: #5bc0be;
-  text-decoration: none;
 }
