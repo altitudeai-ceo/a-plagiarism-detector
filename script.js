@@ -1,8 +1,12 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 function normalizeText(text) {
-  // Remove punctuation, convert to lowercase, and trim whitespace
-  return text.replace(/[.,!?;:()]/g, "").toLowerCase().trim();
+  // Remove punctuation, convert to lowercase, trim whitespace, and remove non-printable characters
+  return text
+    .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII characters
+    .replace(/[.,!?;:()]/g, "") // Remove punctuation
+    .toLowerCase() // Convert to lowercase
+    .trim(); // Remove extra spaces
 }
 
 function tokenizeText(text) {
@@ -11,6 +15,12 @@ function tokenizeText(text) {
 }
 
 function calculateSimilarity(inputText, referenceText) {
+  const normalizedInput = normalizeText(inputText);
+  const normalizedReference = normalizeText(referenceText);
+
+  console.log("Normalized Input Text:", normalizedInput);
+  console.log("Normalized Reference Text:", normalizedReference);
+
   const inputTokens = tokenizeText(inputText);
   const referenceTokens = tokenizeText(referenceText);
 
@@ -80,7 +90,7 @@ function performPlagiarismCheck(inputText) {
     "Adding more detailed content ensures better matching and testing results.",
   ];
 
-  console.log("Input Text:", inputText);
+  console.log("Input Text (Raw):", inputText);
   console.log("Reference Documents:", referenceDocuments);
 
   let highestSimilarity = 0;
