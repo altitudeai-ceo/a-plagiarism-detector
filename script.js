@@ -1,47 +1,78 @@
-async function sendForDetection(text) {
-  const resultDiv = document.getElementById("result");
+document.getElementById("analyzeButton").addEventListener("click", checkText);
 
-  try {
-    const payload = {
-      text: text,
-      documents: [
-        "This is a reference document.",
-        "Another document to compare against.",
-        "Add more documents as needed.",
-      ],
+function calculateJaccardSimilarity(text1, text2) {
+  const set1 = new Set(text1.split(/\s+/));
+  const set2 = new Set(text2.split(/\s+/));
+
+  const intersection = new Set([...set1].filter((word) => set2.has(word)));
+  const union = new Set([...set1, ...set2]);
+
+  return ((intersection.size / union.size) * 100).toFixed(2); // Return percentage
+}
+
+async function checkText() {
+  const inputTextArea = document.getElementById("inputText");
+  const fileInput = document.getElementById("fileInput");
+  const resultDiv = document.getElementById("result");
+  let inputText = inputTextArea.value;
+
+  resultDiv.style.display = "block";
+
+  if (!inputText.trim() && !fileInput.files.length) {
+    resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
+    return;
+  }
+
+  if (fileInput.files.length) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      inputText = e.target.result;
+      performPlagiarismCheck(inputText);
     };
 
-    const response = await fetch("http://localhost:3000/check-plagiarism", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    reader.onerror = function () {
+      resultDiv.innerHTML = "<p>Error reading the file. Please try again.</p>";
+    };
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch results from the backend.");
-    }
-
-    const data = await response.json();
-
-    console.log("Response data:", data);
-
-    resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${data.similarityScore}%</p>
-      <p><span>Matches:</span></p>
-      <ul>
-        ${data.matches
-          .map(
-            (match) =>
-              `<li>Document: "${match.document}" - Similarity: ${match.similarity}%</li>`
-          )
-          .join("")}
-      </ul>
-    `;
-  } catch (error) {
-    console.error("Error occurred:", error);
-    resultDiv.innerHTML =
-      "<p>An error occurred while analyzing the text. Please try again later.</p>";
+    reader.readAsText(file);
+  } else {
+    performPlagiarismCheck(inputText);
   }
+}
+
+function performPlagiarismCheck(inputText) {
+  const resultDiv = document.getElementById("result");
+
+  // Reference documents
+  const referenceDocuments = [
+    "This is a reference document.",
+    "Another example of a document to compare against.",
+    "You can add more documents here for comparison.",
+  ];
+
+  // Calculate similarities
+  const results = referenceDocuments.map((doc) => ({
+    document: doc,
+    similarity: calculateJaccardSimilarity(inputText, doc),
+  }));
+
+  // Find the highest similarity score
+  const maxSimilarity = Math.max(...results.map((r) => r.similarity));
+
+  // Display results
+  resultDiv.innerHTML = `
+    <p><span>Highest Similarity Score:</span> ${maxSimilarity}%</p>
+    <p><span>Matches:</span></p>
+    <ul>
+      ${results
+        .filter((r) => r.similarity > 0)
+        .map(
+          (match) =>
+            `<li>Document: "${match.document}" - Similarity: ${match.similarity}%</li>`
+        )
+        .join("")}
+    </ul>
+  `;
 }
