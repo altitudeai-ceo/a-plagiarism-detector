@@ -1,7 +1,12 @@
 document.getElementById("analyzeButton").addEventListener("click", checkText);
 
 async function extractTextFromPDF(file) {
-  const { PDFDocument } = window.pdfLib; // Use pdf-lib library
+  if (!window.pdfLib || !window.pdfLib.PDFDocument) {
+    console.error("pdf-lib library is not loaded. Please check the script inclusion.");
+    throw new Error("pdf-lib library not found.");
+  }
+
+  const { PDFDocument } = window.pdfLib; // Access PDFDocument from pdf-lib
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
 
@@ -10,8 +15,7 @@ async function extractTextFromPDF(file) {
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-    const text = await page.getTextContent();
-    const pageText = text.items.map((item) => item.str).join(" ");
+    const pageText = page.getTextContent().items.map((item) => item.str).join(" ");
     fullText += pageText + " ";
   }
 
@@ -19,43 +23,24 @@ async function extractTextFromPDF(file) {
 }
 
 function normalizeText(text) {
-  // Remove non-printable characters, normalize Unicode, and strip punctuation
   return text
-    .normalize("NFKD") // Normalize Unicode (e.g., accented characters)
+    .normalize("NFKD")
     .replace(/[^\x20-\x7E]/g, "") // Remove non-ASCII characters
     .replace(/[.,!?;:()]/g, "") // Remove punctuation
-    .toLowerCase() // Convert to lowercase
-    .trim(); // Remove extra spaces
+    .toLowerCase()
+    .trim();
 }
 
 function tokenizeText(text) {
-  // Normalize and split text into words
   return normalizeText(text).split(/\s+/);
 }
 
 function calculateSimilarity(inputText, referenceText) {
-  const normalizedInput = normalizeText(inputText);
-  const normalizedReference = normalizeText(referenceText);
-
-  console.log("Normalized Input Text:", normalizedInput);
-  console.log("Normalized Reference Text:", normalizedReference);
-
   const inputTokens = tokenizeText(inputText);
   const referenceTokens = tokenizeText(referenceText);
 
-  console.log("Input Tokens:", inputTokens);
-  console.log("Reference Tokens:", referenceTokens);
-
-  // Find unique word matches
-  const matchedWords = [...new Set(inputTokens.filter((word) =>
-    referenceTokens.includes(word)
-  ))];
-
-  console.log("Matched Words:", matchedWords);
-
-  // Calculate similarity based on input text length
-  const similarityPercentage =
-    (matchedWords.length / inputTokens.length) * 100;
+  const matchedWords = [...new Set(inputTokens.filter((word) => referenceTokens.includes(word)))];
+  const similarityPercentage = (matchedWords.length / inputTokens.length) * 100;
 
   return {
     similarity: similarityPercentage.toFixed(2),
@@ -93,12 +78,18 @@ async function checkText() {
   if (fileInput.files.length) {
     const file = fileInput.files[0];
     if (file.type === "application/pdf") {
-      inputText = await extractTextFromPDF(file);
+      try {
+        inputText = await extractTextFromPDF(file);
+      } catch (error) {
+        resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
+        console.error(error);
+        return;
+      }
     } else {
       const reader = new FileReader();
       inputText = await new Promise((resolve) => {
         reader.onload = (e) => resolve(e.target.result);
-        reader.readAsText(file, "UTF-8"); // Force UTF-8 encoding
+        reader.readAsText(file, "UTF-8");
       });
     }
   }
@@ -115,24 +106,12 @@ function performPlagiarismCheck(inputText) {
     "Adding more detailed content ensures better matching and testing results.",
   ];
 
-  // Log raw input text and its length
-  console.log("Raw Input Text:", inputText);
-  console.log("Input Text Length:", inputText.length);
-
-  // Normalize and log the cleaned input text
   const normalizedInput = normalizeText(inputText);
-  console.log("Normalized Input Text:", normalizedInput);
 
   let highestSimilarity = 0;
   let matchedWords = [];
   const results = referenceDocuments.map((doc, index) => {
-    const normalizedDoc = normalizeText(doc);
-    console.log(`Normalized Reference Document ${index + 1}:`, normalizedDoc);
-
-    const { similarity, matchedWords: words } = calculateSimilarity(
-      normalizedInput,
-      normalizedDoc
-    );
+    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc));
 
     if (similarity > highestSimilarity) highestSimilarity = similarity;
     matchedWords = [...matchedWords, ...words];
@@ -140,15 +119,10 @@ function performPlagiarismCheck(inputText) {
     return {
       document: `Reference Document ${index + 1}`,
       similarity,
-      matchedWords: words,
     };
   });
 
-  matchedWords = [...new Set(matchedWords)]; // Remove duplicates
-
-  // Log matched words and results
-  console.log("Matched Words:", matchedWords);
-  console.log("Similarity Results:", results);
+  matchedWords = [...new Set(matchedWords)];
 
   const highlightedText = highlightMatches(inputText, matchedWords);
 
