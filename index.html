@@ -3,25 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plagiarism & AI Detector</title>
+  <title>Plagiarism Checker</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
-  <script src="script.js" defer></script>
+  <script defer src="script.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Plagiarism & AI Detector</h1>
-  </header>
   <div class="container">
-    <h2>Check Your Work</h2>
+    <h1>Check Your Work</h1>
     <textarea id="inputText" placeholder="Paste your text here..."></textarea>
-    <p style="text-align: center;">OR</p>
-    <input type="file" id="fileInput" accept=".txt, .pdf" />
+    <p>OR</p>
+    <input type="file" id="fileInput" accept=".txt, .pdf">
     <button id="analyzeButton">Analyze</button>
-    <div id="result" class="result" style="display: none;"></div>
+    <div id="result" class="result"></div>
   </div>
-  <footer>
-    <p>&copy; 2024 Plagiarism & AI Detector. All rights reserved.</p>
-  </footer>
 </body>
 </html>
