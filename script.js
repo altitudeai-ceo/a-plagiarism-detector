@@ -28,16 +28,16 @@ function calculateSimilarity(inputText, referenceText) {
   console.log("Input Tokens:", inputTokens);
   console.log("Reference Tokens:", referenceTokens);
 
-  // Find word matches
-  const matchedWords = inputTokens.filter((word) =>
+  // Find unique word matches
+  const matchedWords = [...new Set(inputTokens.filter((word) =>
     referenceTokens.includes(word)
-  );
+  ))];
 
   console.log("Matched Words:", matchedWords);
 
-  // Calculate similarity as a percentage of matched words in the reference text
+  // Calculate similarity based on input text length
   const similarityPercentage =
-    (matchedWords.length / referenceTokens.length) * 100;
+    (matchedWords.length / inputTokens.length) * 100;
 
   return {
     similarity: similarityPercentage.toFixed(2),
