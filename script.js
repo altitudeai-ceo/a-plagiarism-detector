@@ -10,6 +10,25 @@ function calculateJaccardSimilarity(text1, text2) {
   return ((intersection.size / union.size) * 100).toFixed(2); // Return percentage
 }
 
+function highlightMatches(inputText, matches) {
+  // Split input text into words
+  const words = inputText.split(/\s+/);
+
+  // Create a Set of matched words for easy lookup
+  const matchedWords = new Set(
+    matches.flatMap((match) => match.document.split(/\s+/))
+  );
+
+  // Wrap matched words with a span for highlighting
+  return words
+    .map((word) =>
+      matchedWords.has(word)
+        ? `<span class="highlight">${word}</span>`
+        : word
+    )
+    .join(" ");
+}
+
 async function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
@@ -81,7 +100,7 @@ function performPlagiarismCheck(inputText) {
     "You can add more documents here for comparison.",
   ];
 
-  // Calculate similarities
+  // Calculate similarities and matched content
   const results = referenceDocuments.map((doc, index) => ({
     document: `Reference Document ${index + 1}`,
     similarity: calculateJaccardSimilarity(inputText, doc),
@@ -92,12 +111,17 @@ function performPlagiarismCheck(inputText) {
   const matches = results.filter((r) => r.similarity > 0);
 
   if (matches.length > 0) {
+    // Highlight plagiarized words
+    const highlightedText = highlightMatches(inputText, matches);
+
     // Display results with matching reference documents
     resultDiv.innerHTML = `
       <p><span>Highest Similarity Score:</span> ${
         Math.max(...matches.map((r) => r.similarity))
       }%</p>
       <p><span>Matches Found:</span> ${matches.length}</p>
+      <p>Analyzed Text with Highlighted Matches:</p>
+      <div class="highlighted-text">${highlightedText}</div>
       <ul>
         ${matches
           .map(
