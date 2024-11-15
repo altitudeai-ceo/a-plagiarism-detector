@@ -10,15 +10,12 @@ function calculateJaccardSimilarity(text1, text2) {
   return ((intersection.size / union.size) * 100).toFixed(2); // Return percentage
 }
 
-function highlightMatches(inputText, referenceWords) {
-  const words = inputText.split(/(\s+)/);
-  const highlightedWords = words.map((word) => {
-    const cleanWord = word.replace(/[.,!?]/g, "").toLowerCase();
-    return referenceWords.has(cleanWord)
-      ? `<span class="highlight">${word}</span>`
-      : word;
-  });
-  return highlightedWords.join("");
+function highlightMatches(inputText, matchedPhrases) {
+  // Create a regex to match entire phrases
+  const regex = new RegExp(`\\b(${matchedPhrases.join('|')})\\b`, 'gi');
+
+  // Replace matched phrases with highlighted spans
+  return inputText.replace(regex, (match) => `<span class="highlight">${match}</span>`);
 }
 
 async function checkText() {
@@ -39,12 +36,19 @@ async function checkText() {
     const fileType = file.type;
 
     if (fileType === "application/pdf") {
-      const pdfText = await extractTextFromPDF(file);
-      performPlagiarismCheck(pdfText);
+      try {
+        const pdfText = await extractTextFromPDF(file);
+        performPlagiarismCheck(pdfText);
+      } catch (error) {
+        console.error("Error extracting text from PDF:", error);
+        resultDiv.innerHTML = "<p>Error reading the PDF file. Please try again.</p>";
+      }
     } else if (fileType === "text/plain") {
       const reader = new FileReader();
       reader.onload = (e) => performPlagiarismCheck(e.target.result);
       reader.readAsText(file);
+    } else {
+      resultDiv.innerHTML = "<p>Unsupported file format. Please upload a .txt or .pdf file.</p>";
     }
   } else {
     performPlagiarismCheck(inputText);
@@ -72,17 +76,51 @@ function performPlagiarismCheck(inputText) {
   const referenceDocuments = [
     "This is a reference document.",
     "Another example of a document to compare against.",
+    "You can add more documents here for comparison.",
   ];
 
-  const referenceWords = new Set(
-    referenceDocuments.flatMap((doc) =>
-      doc.split(/\s+/).map((word) => word.replace(/[.,!?]/g, "").toLowerCase())
-    )
-  );
+  // Calculate similarities and collect matched phrases
+  const matches = [];
+  const matchedPhrases = [];
+  const results = referenceDocuments.map((doc, index) => {
+    const similarity = calculateJaccardSimilarity(inputText, doc);
+    if (similarity > 0) {
+      matches.push({
+        document: `Reference Document ${index + 1}`,
+        similarity,
+        text: doc,
+      });
+      matchedPhrases.push(...doc.split(/\s+/));
+    }
+    return {
+      document: `Reference Document ${index + 1}`,
+      similarity,
+      text: doc,
+    };
+  });
 
-  const highlightedText = highlightMatches(inputText, referenceWords);
-  resultDiv.innerHTML = `
-    <p>Analyzed Text with Highlighted Matches:</p>
-    <div class="highlighted-text">${highlightedText}</div>
-  `;
+  // Highlight matches in the input text
+  const highlightedText = highlightMatches(inputText, matchedPhrases);
+
+  // Display results
+  if (matches.length > 0) {
+    resultDiv.innerHTML = `
+      <p><span>Highest Similarity Score:</span> ${
+        Math.max(...matches.map((r) => r.similarity))
+      }%</p>
+      <p><span>Matches Found:</span> ${matches.length}</p>
+      <p>Analyzed Text with Highlighted Matches:</p>
+      <div class="highlighted-text">${highlightedText}</div>
+      <ul>
+        ${matches
+          .map(
+            (match) =>
+              `<li><b>${match.document}:</b> "${match.text}" - <b>Similarity:</b> ${match.similarity}%</li>`
+          )
+          .join("")}
+      </ul>
+    `;
+  } else {
+    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
+  }
 }
