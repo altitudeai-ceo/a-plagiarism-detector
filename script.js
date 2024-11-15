@@ -1,91 +1,165 @@
-document.getElementById("analyzeButton").addEventListener("click", async () => {
+document.getElementById("analyzeButton").addEventListener("click", checkText);
+
+async function extractTextFromPDF(file) {
+  if (!window.pdfjsLib) {
+    console.error("PDF.js library is not loaded. Please check the script inclusion.");
+    throw new Error("PDF.js library not found.");
+  }
+
+  const fileReader = new FileReader();
+  const arrayBuffer = await new Promise((resolve) => {
+    fileReader.onload = (e) => resolve(e.target.result);
+    fileReader.readAsArrayBuffer(file);
+  });
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = "";
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item) => item.str).join(" ");
+    fullText += pageText + " ";
+  }
+
+  return fullText;
+}
+
+function normalizeText(text) {
+  return text
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/[.,!?;:()]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function tokenizeText(text) {
+  return normalizeText(text).split(/\s+/);
+}
+
+function calculateSimilarity(inputText, referenceText) {
+  const inputTokens = tokenizeText(inputText);
+  const referenceTokens = tokenizeText(referenceText);
+
+  const matchedWords = [...new Set(inputTokens.filter((word) => referenceTokens.includes(word)))];
+  const similarityPercentage = (matchedWords.length / inputTokens.length) * 100;
+
+  return {
+    similarity: similarityPercentage.toFixed(2),
+    matchedWords: matchedWords,
+  };
+}
+
+function highlightMatches(inputText, matchedWords) {
+  let highlightedText = inputText;
+
+  matchedWords.forEach((word) => {
+    const regex = new RegExp(`\\b${word}\\b`, "gi");
+    highlightedText = highlightedText.replace(
+      regex,
+      `<span class="highlight">${word}</span>`
+    );
+  });
+
+  return highlightedText;
+}
+
+async function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
   const resultDiv = document.getElementById("result");
-  const progressBar = document.getElementById("progressBar");
-  const progressContainer = document.getElementById("progressContainer");
+  let inputText = inputTextArea.value;
 
-  // Reset UI
   resultDiv.style.display = "none";
-  progressContainer.style.display = "block";
-  progressBar.style.width = "0%";
-  progressBar.textContent = "0%";
 
-  const updateProgressBar = (percentage) => {
-    progressBar.style.width = `${percentage}%`;
-    progressBar.textContent = `${percentage}%`;
-  };
-
-  let progress = 0;
-  const progressInterval = setInterval(() => {
-    if (progress >= 90) {
-      clearInterval(progressInterval);
-    } else {
-      progress += 10;
-      updateProgressBar(progress);
-    }
-  }, 300);
-
-  try {
-    let inputText = inputTextArea.value.trim();
-
-    if (!inputText && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      if (file.type === "application/pdf") {
-        inputText = await extractTextFromPDF(file);
-      } else {
-        inputText = await file.text();
-      }
-    }
-
-    if (!inputText) {
-      throw new Error("No text or file input provided.");
-    }
-
-    // Perform the plagiarism check here
-    performPlagiarismCheck(inputText);
-
-    // Stop progress bar and complete to 100%
-    clearInterval(progressInterval);
-    updateProgressBar(100);
-
-  } catch (error) {
-    clearInterval(progressInterval);
-    progressBar.style.backgroundColor = "red";
-    progressBar.textContent = "Error";
-    resultDiv.innerHTML = `<p>An error occurred: ${error.message}</p>`;
+  if (!inputText.trim() && !fileInput.files.length) {
     resultDiv.style.display = "block";
-    console.error("Error during plagiarism check:", error);
-  } finally {
-    setTimeout(() => {
-      progressContainer.style.display = "none";
-    }, 1000);
+    resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
+    return;
   }
-});
 
-async function extractTextFromPDF(file) {
-  const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
-  let text = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map((item) => item.str).join(" ");
+  if (fileInput.files.length) {
+    const file = fileInput.files[0];
+    if (file.type === "application/pdf") {
+      try {
+        inputText = await extractTextFromPDF(file);
+      } catch (error) {
+        resultDiv.style.display = "block";
+        resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
+        console.error(error);
+        return;
+      }
+    } else {
+      const reader = new FileReader();
+      inputText = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsText(file, "UTF-8");
+      });
+    }
   }
-  return text;
+
+  performPlagiarismCheck(inputText);
 }
 
-function performPlagiarismCheck(text) {
-  // Simulate checking plagiarism (replace this logic with a real API call)
-  setTimeout(() => {
-    const resultDiv = document.getElementById("result");
+function performPlagiarismCheck(inputText) {
+  const resultDiv = document.getElementById("result");
+
+  const referenceDocuments = [
+    {
+      text: "This is a reference document that discusses certain topics in detail.",
+      url: "https://example.com/document1",
+    },
+    {
+      text: "Here is another example of a document to compare against plagiarism cases.",
+      url: "https://example.com/document2",
+    },
+    {
+      text: "Adding more detailed content ensures better matching and testing results.",
+      url: "https://example.com/document3",
+    },
+  ];
+
+  const normalizedInput = normalizeText(inputText);
+
+  let highestSimilarity = 0;
+  let matchedWords = [];
+  const results = referenceDocuments.map((doc, index) => {
+    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc.text));
+
+    if (similarity > highestSimilarity) highestSimilarity = similarity;
+    matchedWords = [...matchedWords, ...words];
+
+    return {
+      document: `Reference Document ${index + 1}`,
+      similarity,
+      url: doc.url,
+    };
+  });
+
+  matchedWords = [...new Set(matchedWords)];
+
+  const highlightedText = highlightMatches(inputText, matchedWords);
+
+  if (highestSimilarity > 0) {
     resultDiv.style.display = "block";
     resultDiv.innerHTML = `
-      <h3>Plagiarism Check Results:</h3>
-      <p>Similarity Score: 85%</p>
+      <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
+      <p><span>Matches Found:</span> ${matchedWords.length}</p>
+      <p>Analyzed Text with Highlighted Matches:</p>
+      <div class="highlighted-text">${highlightedText}</div>
       <ul>
-        <li><a href="https://example.com/document1" target="_blank">Document 1</a> - Similarity: 90%</li>
-        <li><a href="https://example.com/document2" target="_blank">Document 2</a> - Similarity: 75%</li>
+        ${results
+          .filter((r) => r.similarity > 0)
+          .map(
+            (match) =>
+              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}% - <a href="${match.url}" target="_blank">View Document</a></li>`
+          )
+          .join("")}
       </ul>
     `;
-  }, 2000); // Simulate a 2-second delay for processing
+  } else {
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
+  }
 }
