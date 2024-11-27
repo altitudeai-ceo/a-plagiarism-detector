@@ -115,70 +115,77 @@ async function checkText() {
     }
   }, 300);
 
-  performPlagiarismCheck(inputText).then(() => {
-    clearInterval(progressInterval);
-    progressContainer.style.display = "none";
-  });
+  const plagiarismResults = await performPlagiarismCheck(inputText);
+  displayResults(plagiarismResults, inputText);
+
+  clearInterval(progressInterval);
+  progressContainer.style.display = "none";
 }
 
 async function performPlagiarismCheck(inputText) {
+  const apiKey = "YOUR_API_KEY"; // Replace with your actual API key
+  const searchEngineId = "YOUR_SEARCH_ENGINE_ID"; // Replace with your Custom Search Engine ID
+
+  const sentences = inputText.split(/[.!?]/).filter((sentence) => sentence.trim().length > 0);
+  const plagiarismResults = [];
+
+  for (const sentence of sentences) {
+    const query = encodeURIComponent(sentence.trim());
+    const url = `https://www.googleapis.com/customsearch/v1?q=${query}&key=${apiKey}&cx=${searchEngineId}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.items) {
+        plagiarismResults.push({
+          sentence,
+          results: data.items.map((item) => ({
+            title: item.title,
+            snippet: item.snippet,
+            link: item.link,
+          })),
+        });
+      }
+    } catch (error) {
+      console.error("Error querying Google Custom Search API:", error);
+    }
+  }
+
+  return plagiarismResults;
+}
+
+function displayResults(results, inputText) {
   const resultDiv = document.getElementById("resultBox");
-
-  const referenceDocuments = [
-    {
-      text: "This is a reference document that discusses certain topics in detail.",
-      url: "https://example.com/document1",
-    },
-    {
-      text: "Here is another example of a document to compare against plagiarism cases.",
-      url: "https://example.com/document2",
-    },
-    {
-      text: "Adding more detailed content ensures better matching and testing results.",
-      url: "https://example.com/document3",
-    },
-  ];
-
-  const normalizedInput = normalizeText(inputText);
-
   let highestSimilarity = 0;
   let matchedWords = [];
-  const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc.text));
+  let outputHTML = "";
 
-    if (similarity > highestSimilarity) highestSimilarity = similarity;
-    matchedWords = [...matchedWords, ...words];
+  results.forEach((result, index) => {
+    const { sentence, results: matches } = result;
+    const normalizedInput = normalizeText(inputText);
+    matches.forEach((match) => {
+      const { similarity, matchedWords: words } = calculateSimilarity(
+        normalizedInput,
+        normalizeText(match.snippet)
+      );
+      if (similarity > highestSimilarity) highestSimilarity = similarity;
+      matchedWords = [...matchedWords, ...words];
 
-    return {
-      document: `Reference Document ${index + 1}`,
-      similarity,
-      url: doc.url,
-    };
+      outputHTML += `
+        <li><b>Match ${index + 1}:</b> <b>Similarity:</b> ${similarity}% - <a href="${match.link}" target="_blank">${match.title}</a></li>
+      `;
+    });
   });
-
-  matchedWords = [...new Set(matchedWords)];
 
   const highlightedText = highlightMatches(inputText, matchedWords);
 
-  if (highestSimilarity > 0) {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
-      <p><span>Matches Found:</span> ${matchedWords.length}</p>
-      <p>Analyzed Text with Highlighted Matches:</p>
-      <div class="highlighted-text">${highlightedText}</div>
-      <ul>
-        ${results
-          .filter((r) => r.similarity > 0)
-          .map(
-            (match) =>
-              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}% - <a href="${match.url}" target="_blank">View Document</a></li>`
-          )
-          .join("")}
-      </ul>
-    `;
-  } else {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
-  }
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = `
+    <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
+    <p><span>Matches Found:</span> ${matchedWords.length}</p>
+    <p>Analyzed Text with Highlighted Matches:</p>
+    <div class="highlighted-text">${highlightedText}</div>
+    <ul>${outputHTML}</ul>
+  `;
 }
