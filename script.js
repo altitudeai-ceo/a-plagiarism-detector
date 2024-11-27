@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         console.log("Processing file input...");
         textToAnalyze = await extractTextFromPDF(fileInput);
+        console.log("Extracted text:", textToAnalyze);
       } catch (error) {
         console.error("Error reading file:", error);
         progressContainer.style.display = "none";
@@ -48,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
         progressBar.innerHTML = `${progress}%`;
       }
 
-      // Perform analysis
+      // Perform analysis (using simulated results)
       const matchedResults = await searchGoogleForPlagiarism(textToAnalyze);
 
       if (matchedResults.length > 0) {
@@ -68,18 +69,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function searchGoogleForPlagiarism(query) {
     console.log("Searching Google for:", query);
-    // Replace with your API implementation
-    const results = [];
-    const sentences = query.split(".").slice(0, 5); // Use the first 5 sentences
-    for (const sentence of sentences) {
-      const simulatedResult = {
-        title: "Simulated Result Title",
-        link: "https://example.com",
-        snippet: "Simulated snippet for testing purposes.",
-      };
-      results.push(simulatedResult);
-      await delay(500); // Simulate API delay
-    }
+
+    // Simulate search results for demonstration
+    const results = [
+      {
+        title: "Simulated Result 1",
+        link: "https://example.com/1",
+        snippet: "This is a simulated result snippet 1.",
+      },
+      {
+        title: "Simulated Result 2",
+        link: "https://example.com/2",
+        snippet: "This is a simulated result snippet 2.",
+      },
+    ];
+
+    // Simulate delay
+    await delay(1000);
     return results;
   }
 
@@ -116,8 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const pageText = textContent.items.map((item) => item.str).join(" ");
       fullText += pageText + "\n";
     }
-    console.log("Extracted text:", fullText);
-    return fullText;
+    return fullText.trim();
   }
 
   function delay(ms) {
