@@ -4,6 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const progressContainer = document.getElementById("progressContainer");
   const resultBox = document.getElementById("resultBox");
 
+  if (!analyzeButton || !progressBar || !progressContainer || !resultBox) {
+    console.error("One or more critical HTML elements are missing.");
+    return;
+  }
+
+  console.log("Page loaded and elements initialized.");
+
   analyzeButton.addEventListener("click", async () => {
     console.log("Analyze button clicked.");
 
@@ -11,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileInput = document.getElementById("fileInput").files[0];
 
     if (!inputText && !fileInput) {
-      console.log("No input text or file uploaded.");
+      console.warn("No input text or file uploaded.");
       resultBox.style.display = "block";
       resultBox.innerHTML = "Please provide text or upload a file.";
       return;
@@ -55,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (matchedResults.length > 0) {
         displayResults(matchedResults);
       } else {
+        console.log("No matches found.");
         resultBox.style.display = "block";
         resultBox.innerHTML = "No matches found.";
       }
