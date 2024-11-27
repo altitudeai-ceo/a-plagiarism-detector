@@ -1,134 +1,110 @@
-document.getElementById("analyzeButton").addEventListener("click", async function () {
-    const inputText = document.getElementById("inputText").value.trim();
-    const fileInput = document.getElementById("fileInput");
-    const resultDiv = document.getElementById("result");
-    const progressBar = document.getElementById("progressBar");
+document.addEventListener("DOMContentLoaded", () => {
+  const analyzeButton = document.getElementById("analyzeButton");
+  const progressBar = document.getElementById("progressBar");
+  const progressContainer = document.getElementById("progressContainer");
+  const resultContainer = document.getElementById("resultContainer");
+  const resultBox = document.getElementById("resultBox");
 
-    // Clear previous results
-    resultDiv.style.display = "none";
-    progressBar.style.display = "block";
-    progressBar.value = 0;
+  const googleSearchAPI = "https://www.googleapis.com/customsearch/v1";
 
-    if (!inputText && fileInput.files.length === 0) {
-        alert("Please enter text or upload a file.");
-        progressBar.style.display = "none";
-        return;
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  analyzeButton.addEventListener("click", async () => {
+    const inputText = document.getElementById("textInput").value;
+    const fileInput = document.getElementById("fileInput").files[0];
+
+    if (!inputText && !fileInput) {
+      resultBox.innerHTML = "Please provide text or upload a file.";
+      return;
     }
+
+    resultBox.innerHTML = ""; // Clear results
+    progressContainer.style.display = "block"; // Show progress bar
+    progressBar.style.width = "0%"; // Reset progress bar
 
     let textToAnalyze = inputText;
 
-    if (fileInput.files.length > 0) {
-        textToAnalyze = await extractTextFromPDF(fileInput.files[0]);
-    }
-
-    if (!textToAnalyze) {
-        alert("Failed to read the file. Please try again.");
-        progressBar.style.display = "none";
+    if (fileInput) {
+      try {
+        textToAnalyze = await extractTextFromPDF(fileInput);
+      } catch (error) {
+        console.error("Error reading PDF:", error);
+        resultBox.innerHTML = "Error reading the uploaded file.";
+        progressContainer.style.display = "none";
         return;
+      }
     }
 
-    // Split text into sentences
-    const sentences = textToAnalyze.match(/[^.?!]+[.!?]/g) || [textToAnalyze];
-    const allResults = [];
+    try {
+      for (let progress = 0; progress <= 100; progress += 10) {
+        progressBar.style.width = `${progress}%`;
+        await delay(200); // Simulate loading
+      }
 
-    // Query each sentence
-    for (let i = 0; i < sentences.length; i++) {
-        const sentence = sentences[i].trim();
-        if (sentence.length > 5) {
-            const results = await performDuckDuckGoSearch(sentence);
-            allResults.push(...results);
+      const matchedResults = await searchGoogleForPlagiarism(textToAnalyze);
 
-            // Update progress bar
-            progressBar.value = ((i + 1) / sentences.length) * 100;
-        }
+      if (matchedResults.length > 0) {
+        displayResults(matchedResults);
+      } else {
+        resultBox.innerHTML = "No matches found.";
+      }
+    } catch (error) {
+      console.error("Error during analysis:", error);
+      resultBox.innerHTML = "An error occurred while analyzing the text.";
+    } finally {
+      progressContainer.style.display = "none"; // Hide progress bar
+    }
+  });
+
+  async function searchGoogleForPlagiarism(query) {
+    const encodedQuery = encodeURIComponent(query);
+    const url = `${googleSearchAPI}?q=${encodedQuery}&key=YOUR_GOOGLE_API_KEY&cx=YOUR_CUSTOM_SEARCH_ENGINE_ID`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch search results.");
     }
 
-    progressBar.style.display = "none";
-
-    if (allResults.length > 0) {
-        displayResults(allResults, textToAnalyze);
-    } else {
-        resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
-        resultDiv.style.display = "block";
-    }
-});
-
-// DuckDuckGo Search Function
-async function performDuckDuckGoSearch(query) {
-    const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
     const data = await response.json();
-    const results = [];
 
-    if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-        data.RelatedTopics.forEach((topic) => {
-            if (topic.FirstURL && topic.Text) {
-                results.push({
-                    url: topic.FirstURL,
-                    text: topic.Text,
-                });
-            }
-        });
+    return data.items.map((item) => ({
+      title: item.title,
+      link: item.link,
+      snippet: item.snippet,
+    }));
+  }
+
+  function displayResults(results) {
+    resultBox.innerHTML = `
+      <h3>Search Results:</h3>
+      <ul>
+        ${results
+          .map(
+            (result) => `
+          <li>
+            <a href="${result.link}" target="_blank">${result.title}</a>
+            <p>${result.snippet}</p>
+          </li>
+        `
+          )
+          .join("")}
+      </ul>
+    `;
+  }
+
+  async function extractTextFromPDF(file) {
+    const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.15.349/pdf.min.js");
+    const typedarray = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item) => item.str).join(" ");
+      fullText += pageText + "\n";
     }
-
-    return results;
-}
-
-// Display Results
-function displayResults(results, inputText) {
-    const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML = `<h3>Highest Similarity Score: ${calculateSimilarity(inputText, results)}%</h3>`;
-    resultDiv.innerHTML += "<ul>";
-
-    results.forEach((result, index) => {
-        resultDiv.innerHTML += `
-            <li>
-                Reference Document ${index + 1}: <a href="${result.url}" target="_blank">${result.text}</a>
-            </li>
-        `;
-    });
-
-    resultDiv.innerHTML += "</ul>";
-    resultDiv.style.display = "block";
-}
-
-// Simple Similarity Calculation (Placeholder)
-function calculateSimilarity(inputText, results) {
-    // A more sophisticated approach should be implemented for semantic similarity.
-    return Math.min(results.length * 5, 100).toFixed(2); // Example: 5% per result
-}
-
-// Extract Text from PDF
-async function extractTextFromPDF(file) {
-    const reader = new FileReader();
-
-    return new Promise((resolve, reject) => {
-        reader.onload = async function (e) {
-            try {
-                const pdfjsLib = window["pdfjs-dist/build/pdf"];
-                pdfjsLib.GlobalWorkerOptions.workerSrc = "//mozilla.github.io/pdf.js/build/pdf.worker.js";
-
-                const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
-                let text = "";
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const content = await page.getTextContent();
-                    content.items.forEach((item) => {
-                        text += item.str + " ";
-                    });
-                }
-
-                resolve(text.trim());
-            } catch (err) {
-                console.error("Error reading PDF:", err);
-                reject("");
-            }
-        };
-
-        reader.onerror = function () {
-            reject("");
-        };
-
-        reader.readAsArrayBuffer(file);
-    });
-}
+    return fullText;
+  }
+});
