@@ -2,98 +2,109 @@ document.addEventListener("DOMContentLoaded", () => {
   const analyzeButton = document.getElementById("analyzeButton");
   const progressBar = document.getElementById("progressBar");
   const progressContainer = document.getElementById("progressContainer");
-  const resultContainer = document.getElementById("resultContainer");
   const resultBox = document.getElementById("resultBox");
 
-  const googleSearchAPI = "https://www.googleapis.com/customsearch/v1";
-
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
   analyzeButton.addEventListener("click", async () => {
-    const inputText = document.getElementById("textInput").value;
+    console.log("Analyze button clicked.");
+
+    const inputText = document.getElementById("inputText").value.trim();
     const fileInput = document.getElementById("fileInput").files[0];
 
     if (!inputText && !fileInput) {
+      console.log("No input text or file uploaded.");
+      resultBox.style.display = "block";
       resultBox.innerHTML = "Please provide text or upload a file.";
       return;
     }
 
-    resultBox.innerHTML = ""; // Clear results
-    progressContainer.style.display = "block"; // Show progress bar
-    progressBar.style.width = "0%"; // Reset progress bar
+    // Reset UI
+    resultBox.style.display = "none";
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressBar.innerHTML = "0%";
 
     let textToAnalyze = inputText;
 
     if (fileInput) {
       try {
+        console.log("Processing file input...");
         textToAnalyze = await extractTextFromPDF(fileInput);
       } catch (error) {
-        console.error("Error reading PDF:", error);
-        resultBox.innerHTML = "Error reading the uploaded file.";
+        console.error("Error reading file:", error);
         progressContainer.style.display = "none";
+        resultBox.style.display = "block";
+        resultBox.innerHTML = "Error reading the uploaded file.";
         return;
       }
     }
 
     try {
-      for (let progress = 0; progress <= 100; progress += 10) {
+      console.log("Text to analyze:", textToAnalyze);
+
+      // Simulate progress bar
+      for (let progress = 0; progress <= 100; progress += 20) {
+        await delay(500); // Simulate loading delay
         progressBar.style.width = `${progress}%`;
-        await delay(200); // Simulate loading
+        progressBar.innerHTML = `${progress}%`;
       }
 
+      // Perform analysis
       const matchedResults = await searchGoogleForPlagiarism(textToAnalyze);
 
       if (matchedResults.length > 0) {
         displayResults(matchedResults);
       } else {
+        resultBox.style.display = "block";
         resultBox.innerHTML = "No matches found.";
       }
     } catch (error) {
       console.error("Error during analysis:", error);
+      resultBox.style.display = "block";
       resultBox.innerHTML = "An error occurred while analyzing the text.";
     } finally {
-      progressContainer.style.display = "none"; // Hide progress bar
+      progressContainer.style.display = "none";
     }
   });
 
   async function searchGoogleForPlagiarism(query) {
-    const encodedQuery = encodeURIComponent(query);
-    const url = `${googleSearchAPI}?q=${encodedQuery}&key=YOUR_GOOGLE_API_KEY&cx=YOUR_CUSTOM_SEARCH_ENGINE_ID`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch search results.");
+    console.log("Searching Google for:", query);
+    // Replace with your API implementation
+    const results = [];
+    const sentences = query.split(".").slice(0, 5); // Use the first 5 sentences
+    for (const sentence of sentences) {
+      const simulatedResult = {
+        title: "Simulated Result Title",
+        link: "https://example.com",
+        snippet: "Simulated snippet for testing purposes.",
+      };
+      results.push(simulatedResult);
+      await delay(500); // Simulate API delay
     }
-
-    const data = await response.json();
-
-    return data.items.map((item) => ({
-      title: item.title,
-      link: item.link,
-      snippet: item.snippet,
-    }));
+    return results;
   }
 
   function displayResults(results) {
+    console.log("Displaying results:", results);
     resultBox.innerHTML = `
       <h3>Search Results:</h3>
       <ul>
         ${results
           .map(
             (result) => `
-          <li>
-            <a href="${result.link}" target="_blank">${result.title}</a>
-            <p>${result.snippet}</p>
-          </li>
-        `
+            <li>
+              <a href="${result.link}" target="_blank">${result.title}</a>
+              <p>${result.snippet}</p>
+            </li>
+          `
           )
           .join("")}
       </ul>
     `;
+    resultBox.style.display = "block";
   }
 
   async function extractTextFromPDF(file) {
+    console.log("Extracting text from PDF...");
     const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.15.349/pdf.min.js");
     const typedarray = new Uint8Array(await file.arrayBuffer());
     const pdf = await pdfjsLib.getDocument(typedarray).promise;
@@ -105,6 +116,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const pageText = textContent.items.map((item) => item.str).join(" ");
       fullText += pageText + "\n";
     }
+    console.log("Extracted text:", fullText);
     return fullText;
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 });
