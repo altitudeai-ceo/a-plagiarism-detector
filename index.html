@@ -23,8 +23,15 @@
     <input type="file" id="fileInput" accept=".txt, .pdf">
     <button id="analyzeButton">Analyze</button>
 
+    <!-- Progress Bar -->
+    <div id="progressContainer" style="display: none;">
+      <div id="progressBar" style="width: 0%; height: 10px; background-color: green;"></div>
+    </div>
+
     <!-- Result Area -->
-    <div id="result" class="result" style="display: none;"></div>
+    <div id="resultContainer">
+      <div id="resultBox" class="result" style="display: none;"></div>
+    </div>
   </div>
 </body>
 </html>
