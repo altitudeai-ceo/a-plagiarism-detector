@@ -34,23 +34,6 @@ function normalizeText(text) {
     .trim();
 }
 
-function tokenizeText(text) {
-  return normalizeText(text).split(/\s+/);
-}
-
-function calculateSimilarity(inputText, referenceText) {
-  const inputTokens = tokenizeText(inputText);
-  const referenceTokens = tokenizeText(referenceText);
-
-  const matchedWords = [...new Set(inputTokens.filter((word) => referenceTokens.includes(word)))];
-  const similarityPercentage = (matchedWords.length / inputTokens.length) * 100;
-
-  return {
-    similarity: similarityPercentage.toFixed(2),
-    matchedWords: matchedWords,
-  };
-}
-
 function highlightMatches(inputText, matchedWords) {
   let highlightedText = inputText;
 
@@ -63,6 +46,66 @@ function highlightMatches(inputText, matchedWords) {
   });
 
   return highlightedText;
+}
+
+async function performGoogleSearch(inputText) {
+  const searchQueries = inputText.split(".").slice(0, 5); // Extract up to 5 sentences for queries
+  const results = [];
+  
+  for (const query of searchQueries) {
+    const response = await fetch(
+      `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`
+    );
+    const data = await response.json();
+    if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+      data.RelatedTopics.forEach((topic) => {
+        if (topic.FirstURL && topic.Text) {
+          results.push({
+            url: topic.FirstURL,
+            text: topic.Text,
+          });
+        }
+      });
+    }
+  }
+  return results;
+}
+
+async function performPlagiarismCheck(inputText) {
+  const resultDiv = document.getElementById("result");
+
+  try {
+    const googleResults = await performGoogleSearch(inputText);
+
+    if (googleResults.length > 0) {
+      const matchedWords = inputText.split(" ").filter((word) =>
+        googleResults.some((result) => result.text.includes(word))
+      );
+
+      const highlightedText = highlightMatches(inputText, matchedWords);
+      resultDiv.style.display = "block";
+      resultDiv.innerHTML = `
+        <p><span>Matches Found:</span> ${googleResults.length}</p>
+        <p>Analyzed Text with Highlighted Matches:</p>
+        <div class="highlighted-text">${highlightedText}</div>
+        <ul>
+          ${googleResults
+            .map(
+              (result, index) =>
+                `<li><b>Reference ${index + 1}:</b> <a href="${result.url}" target="_blank">${result.text}</a></li>`
+            )
+            .join("")}
+        </ul>
+      `;
+    } else {
+      resultDiv.style.display = "block";
+      resultDiv.innerHTML = "<p>No matches found with online sources.</p>";
+    }
+  } catch (error) {
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = "<p>Error while performing the plagiarism check. Please try again.</p>";
+    console.error(error);
+  }
 }
 
 async function checkText() {
@@ -100,66 +143,4 @@ async function checkText() {
   }
 
   performPlagiarismCheck(inputText);
-}
-
-function performPlagiarismCheck(inputText) {
-  const resultDiv = document.getElementById("result");
-
-  const referenceDocuments = [
-    {
-      text: "This is a reference document that discusses certain topics in detail.",
-      url: "https://example.com/document1",
-    },
-    {
-      text: "Here is another example of a document to compare against plagiarism cases.",
-      url: "https://example.com/document2",
-    },
-    {
-      text: "Adding more detailed content ensures better matching and testing results.",
-      url: "https://example.com/document3",
-    },
-  ];
-
-  const normalizedInput = normalizeText(inputText);
-
-  let highestSimilarity = 0;
-  let matchedWords = [];
-  const results = referenceDocuments.map((doc, index) => {
-    const { similarity, matchedWords: words } = calculateSimilarity(normalizedInput, normalizeText(doc.text));
-
-    if (similarity > highestSimilarity) highestSimilarity = similarity;
-    matchedWords = [...matchedWords, ...words];
-
-    return {
-      document: `Reference Document ${index + 1}`,
-      similarity,
-      url: doc.url,
-    };
-  });
-
-  matchedWords = [...new Set(matchedWords)];
-
-  const highlightedText = highlightMatches(inputText, matchedWords);
-
-  if (highestSimilarity > 0) {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = `
-      <p><span>Highest Similarity Score:</span> ${highestSimilarity}%</p>
-      <p><span>Matches Found:</span> ${matchedWords.length}</p>
-      <p>Analyzed Text with Highlighted Matches:</p>
-      <div class="highlighted-text">${highlightedText}</div>
-      <ul>
-        ${results
-          .filter((r) => r.similarity > 0)
-          .map(
-            (match) =>
-              `<li><b>${match.document}:</b> <b>Similarity:</b> ${match.similarity}% - <a href="${match.url}" target="_blank">View Document</a></li>`
-          )
-          .join("")}
-      </ul>
-    `;
-  } else {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
-  }
 }
