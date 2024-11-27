@@ -1,174 +1,132 @@
-document.getElementById("analyzeButton").addEventListener("click", checkText);
-
-async function extractTextFromPDF(file) {
-  if (!window.pdfjsLib) {
-    console.error("PDF.js library is not loaded. Please check the script inclusion.");
-    throw new Error("PDF.js library not found.");
-  }
-
-  const fileReader = new FileReader();
-  const arrayBuffer = await new Promise((resolve) => {
-    fileReader.onload = (e) => resolve(e.target.result);
-    fileReader.readAsArrayBuffer(file);
-  });
-
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = "";
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => item.str).join(" ");
-    fullText += pageText + " ";
-  }
-
-  return fullText;
-}
-
-function normalizeText(text) {
-  return text
-    .normalize("NFKD")
-    .replace(/[^\x20-\x7E]/g, "")
-    .replace(/[.,!?;:()]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function tokenizeText(text) {
-  return normalizeText(text).split(/\s+/);
-}
-
-function calculateSimilarity(inputText, referenceText) {
-  const inputTokens = tokenizeText(inputText);
-  const referenceTokens = tokenizeText(referenceText);
-
-  const matchedWords = [...new Set(inputTokens.filter((word) => referenceTokens.includes(word)))];
-  const similarityPercentage = (matchedWords.length / inputTokens.length) * 100;
-
-  return {
-    similarity: similarityPercentage.toFixed(2),
-    matchedWords: matchedWords,
-  };
-}
-
-function highlightMatches(inputText, matchedWords) {
-  let highlightedText = inputText;
-
-  matchedWords.forEach((word) => {
-    const regex = new RegExp(`\\b${word}\\b`, "gi");
-    highlightedText = highlightedText.replace(
-      regex,
-      `<span class="highlight">${word}</span>`
-    );
-  });
-
-  return highlightedText;
-}
-
-async function checkText() {
-  const inputTextArea = document.getElementById("inputText");
-  const fileInput = document.getElementById("fileInput");
-  const resultDiv = document.getElementById("result");
+document.addEventListener("DOMContentLoaded", () => {
+  const analyzeButton = document.getElementById("analyzeButton");
   const progressBar = document.getElementById("progressBar");
+  const progressContainer = document.getElementById("progressContainer");
+  const resultBox = document.getElementById("resultBox");
 
-  let inputText = inputTextArea.value;
+  analyzeButton.addEventListener("click", async () => {
+    console.log("Analyze button clicked.");
 
-  resultDiv.style.display = "none";
-  progressBar.style.display = "block";
-  progressBar.value = 0;
+    const inputText = document.getElementById("inputText").value.trim();
+    const fileInput = document.getElementById("fileInput").files[0];
 
-  if (!inputText.trim() && !fileInput.files.length) {
-    resultDiv.style.display = "block";
-    resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
-    progressBar.style.display = "none";
-    return;
-  }
+    if (!inputText && !fileInput) {
+      console.log("No input text or file uploaded.");
+      resultBox.style.display = "block";
+      resultBox.innerHTML = "Please provide text or upload a file.";
+      return;
+    }
 
-  if (fileInput.files.length) {
-    const file = fileInput.files[0];
-    if (file.type === "application/pdf") {
+    // Reset UI
+    resultBox.style.display = "none";
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressBar.innerHTML = "0%";
+
+    let textToAnalyze = inputText;
+
+    if (fileInput) {
       try {
-        inputText = await extractTextFromPDF(file);
+        console.log("Processing file input...");
+        textToAnalyze = await extractTextFromPDF(fileInput);
+        console.log("Extracted text:", textToAnalyze);
       } catch (error) {
-        resultDiv.style.display = "block";
-        resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
-        progressBar.style.display = "none";
-        console.error(error);
+        console.error("Error reading file:", error);
+        progressContainer.style.display = "none";
+        resultBox.style.display = "block";
+        resultBox.innerHTML = "Error reading the uploaded file.";
         return;
       }
-    } else {
-      const reader = new FileReader();
-      inputText = await new Promise((resolve) => {
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsText(file, "UTF-8");
-      });
     }
+
+    try {
+      console.log("Text to analyze:", textToAnalyze);
+
+      // Simulate progress bar
+      for (let progress = 0; progress <= 100; progress += 10) {
+        await delay(200); // Simulate loading delay
+        progressBar.style.width = `${progress}%`;
+        progressBar.innerHTML = `${progress}%`;
+      }
+
+      // Perform analysis
+      const matchedResults = await searchGoogleForPlagiarism(textToAnalyze);
+
+      if (matchedResults.length > 0) {
+        displayResults(matchedResults);
+      } else {
+        resultBox.style.display = "block";
+        resultBox.innerHTML = "No matches found.";
+      }
+    } catch (error) {
+      console.error("Error during analysis:", error);
+      resultBox.style.display = "block";
+      resultBox.innerHTML = "An error occurred while analyzing the text.";
+    } finally {
+      progressContainer.style.display = "none";
+    }
+  });
+
+  async function searchGoogleForPlagiarism(query) {
+    console.log("Searching Google for:", query);
+
+    // Simulated search results for demonstration
+    const results = [
+      {
+        title: "Simulated Result 1",
+        link: "https://example.com/1",
+        snippet: "This is a simulated result snippet 1.",
+      },
+      {
+        title: "Simulated Result 2",
+        link: "https://example.com/2",
+        snippet: "This is a simulated result snippet 2.",
+      },
+    ];
+
+    // Simulate delay
+    await delay(1000);
+    return results;
   }
 
-  let progressInterval = setInterval(() => {
-    progressBar.value += 10;
-    if (progressBar.value >= 100) {
-      clearInterval(progressInterval);
-    }
-  }, 300);
-
-  const matchedResults = await searchGoogleForPlagiarism(inputText);
-
-  setTimeout(() => {
-    progressBar.style.display = "none";
-
-    if (matchedResults.length > 0) {
-      displayResults(matchedResults);
-    } else {
-      resultDiv.style.display = "block";
-      resultDiv.innerHTML = "<p>No matches found with reference documents.</p>";
-    }
-  }, 3000);
-}
-
-async function searchGoogleForPlagiarism(query) {
-  const sentences = query.split(/[.?!]/).slice(0, 5); // Limit to first 5 sentences for searches
-  const results = [];
-
-  for (const sentence of sentences) {
-    const response = await fetch(
-      `https://api.duckduckgo.com/?q=${encodeURIComponent(sentence)}&format=json`
-    );
-    const data = await response.json();
-
-    if (data.RelatedTopics) {
-      data.RelatedTopics.forEach((topic) => {
-        if (topic.Text && topic.FirstURL) {
-          results.push({
-            text: topic.Text,
-            url: topic.FirstURL,
-          });
-        }
-      });
-    }
+  function displayResults(results) {
+    console.log("Displaying results:", results);
+    resultBox.innerHTML = `
+      <h3>Search Results:</h3>
+      <ul>
+        ${results
+          .map(
+            (result) => `
+            <li>
+              <a href="${result.link}" target="_blank">${result.title}</a>
+              <p>${result.snippet}</p>
+            </li>
+          `
+          )
+          .join("")}
+      </ul>
+    `;
+    resultBox.style.display = "block";
   }
 
-  return results;
-}
+  async function extractTextFromPDF(file) {
+    console.log("Extracting text from PDF...");
+    const pdfjsLib = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.15.349/pdf.min.js");
+    const typedarray = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument(typedarray).promise;
 
-function displayResults(results) {
-  const resultDiv = document.getElementById("result");
-  const highlightedText = highlightMatches(
-    document.getElementById("inputText").value,
-    results.map((res) => res.text)
-  );
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item) => item.str).join(" ");
+      fullText += pageText + "\n";
+    }
+    console.log("Extracted text:", fullText);
+    return fullText;
+  }
 
-  resultDiv.style.display = "block";
-  resultDiv.innerHTML = `
-    <p>Analyzed Text with Highlighted Matches:</p>
-    <div class="highlighted-text">${highlightedText}</div>
-    <ul>
-      ${results
-        .map(
-          (result, index) =>
-            `<li><a href="${result.url}" target="_blank">${result.text}</a></li>`
-        )
-        .join("")}
-    </ul>
-  `;
-}
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+});
