@@ -68,19 +68,20 @@ function highlightMatches(inputText, matchedWords) {
 async function checkText() {
   const inputTextArea = document.getElementById("inputText");
   const fileInput = document.getElementById("fileInput");
-  const resultDiv = document.getElementById("result");
+  const resultDiv = document.getElementById("resultBox");
   const progressBar = document.getElementById("progressBar");
+  const progressContainer = document.getElementById("progressContainer");
 
   let inputText = inputTextArea.value;
 
   resultDiv.style.display = "none";
-  progressBar.style.display = "block";
-  progressBar.value = 0;
+  progressContainer.style.display = "block";
+  progressBar.style.width = "0%";
 
   if (!inputText.trim() && !fileInput.files.length) {
     resultDiv.style.display = "block";
     resultDiv.innerHTML = "<p>Please enter text or upload a file to check.</p>";
-    progressBar.style.display = "none";
+    progressContainer.style.display = "none";
     return;
   }
 
@@ -92,7 +93,7 @@ async function checkText() {
       } catch (error) {
         resultDiv.style.display = "block";
         resultDiv.innerHTML = "<p>Error processing PDF. Please try again.</p>";
-        progressBar.style.display = "none";
+        progressContainer.style.display = "none";
         console.error(error);
         return;
       }
@@ -105,21 +106,23 @@ async function checkText() {
     }
   }
 
-  let progressInterval = setInterval(() => {
-    progressBar.value += 10;
-    if (progressBar.value >= 100) {
+  let progressValue = 0;
+  const progressInterval = setInterval(() => {
+    progressValue += 10;
+    progressBar.style.width = `${progressValue}%`;
+    if (progressValue >= 100) {
       clearInterval(progressInterval);
     }
   }, 300);
 
-  performPlagiarismCheck(inputText);
-  setTimeout(() => {
-    progressBar.style.display = "none";
-  }, 3000);
+  performPlagiarismCheck(inputText).then(() => {
+    clearInterval(progressInterval);
+    progressContainer.style.display = "none";
+  });
 }
 
-function performPlagiarismCheck(inputText) {
-  const resultDiv = document.getElementById("result");
+async function performPlagiarismCheck(inputText) {
+  const resultDiv = document.getElementById("resultBox");
 
   const referenceDocuments = [
     {
